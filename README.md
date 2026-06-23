@@ -100,6 +100,10 @@ primitives in `src/components`.
 
 Because the variable is `NEXT_PUBLIC_*`, its value is exposed to the browser. Never put API secrets in it - it is used only for routing public HTTP requests.
 
+## Home page quick-links
+
+The home page (`src/app/page.tsx`) renders the primary navigation entry points (Manage services, View stats, Record usage, Agents, Docs) and the external Stellar link inside a `<nav aria-label="Quick links">` landmark with a semantic `<ul>` / `<li>` list structure. This improves discoverability for screen-reader users.
+
 ## Security headers
 
 A baseline security header set (CSP, `X-Frame-Options: DENY`, `Referrer-Policy`, `X-Content-Type-Options`, `Permissions-Policy`, HSTS) is wired up in `next.config.ts` via `src/lib/securityHeaders.ts`. The CSP `connect-src` directive tracks `NEXT_PUBLIC_AGENTPAY_API_BASE` automatically; `<a href>` links to external sites (`https://stellar.org`, etc.) remain navigable.
