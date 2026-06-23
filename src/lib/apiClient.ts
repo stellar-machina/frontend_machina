@@ -14,6 +14,17 @@ export type ApiError = {
   requestId?: string;
 };
 
+async function readResponseBody(res: Response): Promise<unknown | undefined> {
+  const responseBody: unknown = (res as Response & { body?: unknown }).body;
+  if (typeof responseBody === "string") {
+    if (responseBody.trim().length === 0) return undefined;
+    return JSON.parse(responseBody);
+  }
+
+  const parsed = await res.json();
+  return parsed === null ? undefined : parsed;
+}
+
 export async function apiFetch<T>(
   path: string,
   init: RequestInit = {}
@@ -29,10 +40,20 @@ export async function apiFetch<T>(
     },
   });
   if (res.status === 204) return undefined as T;
-  const body = (await res.json()) as T | ApiError;
+  let body: T | ApiError | undefined;
+  try {
+    body = (await readResponseBody(res)) as T | ApiError | undefined;
+  } catch {
+    if (!res.ok) {
+      const err = new Error(res.statusText || "Request failed");
+      throw err;
+    }
+    throw new Error("Response body was not valid JSON");
+  }
   if (!res.ok) {
-    const err = new Error((body as ApiError).message);
-    throw Object.assign(err, body as ApiError);
+    const apiError = (body ?? {}) as Partial<ApiError>;
+    const err = new Error(apiError.message || res.statusText || "Request failed");
+    throw Object.assign(err, apiError);
   }
   return body as T;
 }

@@ -8,10 +8,12 @@ if (typeof global.Response === "undefined") {
   class ResponsePolyfill {
     body: string;
     status: number;
+    statusText: string;
     constructor(body?: BodyInit | null, init?: ResponseInit) {
       this.body =
         typeof body === "string" ? body : body == null ? "" : String(body);
       this.status = init?.status ?? 200;
+      this.statusText = init?.statusText ?? "";
     }
     get ok() {
       return this.status >= 200 && this.status < 300;
