@@ -181,6 +181,19 @@ describe("apiClient", () => {
     expect(error.requestId).toBeUndefined();
   });
 
+  it("treats a JSON null body as undefined", async () => {
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: async () => null,
+    }));
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    const { apiGet } = await loadApiClient();
+    await expect(apiGet("/api/v1/things/1")).resolves.toBeUndefined();
+  });
+
   it("reports malformed JSON on a successful response", async () => {
     const fetchMock = jest.fn(async () => ({
       ok: true,
@@ -215,5 +228,44 @@ describe("apiClient", () => {
 
     expect(error).toBeInstanceOf(Error);
     expect(error.message).toBe("Internal Server Error");
+  });
+
+  it("falls back to Request failed when malformed JSON arrives without a status text", async () => {
+    const fetchMock = jest.fn(async () => ({
+      ok: false,
+      status: 500,
+      statusText: "",
+      json: async () => {
+        throw new Error("unexpected token");
+      },
+    }));
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    const { apiGet } = await loadApiClient();
+    const error = (await apiGet("/api/v1/things/1").catch((err) => err)) as Error &
+      Partial<ApiError>;
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toBe("Request failed");
+  });
+
+  it("uses Request failed when an error payload omits message and status text", async () => {
+    const fetchMock = jest.fn(async () => ({
+      ok: false,
+      status: 500,
+      statusText: "",
+      json: async () => ({
+        error: "server_error",
+      }),
+    }));
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    const { apiGet } = await loadApiClient();
+    const error = (await apiGet("/api/v1/things/1").catch((err) => err)) as Error &
+      Partial<ApiError>;
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toBe("Request failed");
+    expect(error.error).toBe("server_error");
   });
 });
