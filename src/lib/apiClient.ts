@@ -94,7 +94,7 @@ export async function apiFetch<T>(
     if (timeoutId !== undefined) {
       clearTimeout(timeoutId);
     }
-    if (callerSignal !== undefined) {
+    if (callerSignal != null) {
       callerSignal.removeEventListener("abort", abortFromCaller);
     }
   }
