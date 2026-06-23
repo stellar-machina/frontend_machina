@@ -1,6 +1,5 @@
-import type { ApiError } from "../apiClient";
 import {
-  ApiError,
+  type ApiError,
   ApiTimeoutError,
   apiDelete,
   apiFetch,
@@ -59,6 +58,10 @@ describe("apiClient", () => {
     globalThis.fetch = originalFetch;
     jest.resetModules();
   });
+
+  function mockFetch(fn: any) {
+    globalThis.fetch = fn;
+  }
 
   it("prefixes GETs with the localhost default base URL", async () => {
     const fetchMock = jest.fn(async (url, init) => {
@@ -148,6 +151,8 @@ describe("apiClient", () => {
 
     const { apiDelete } = await loadApiClient();
     await expect(apiDelete("/api/v1/things/1")).resolves.toBeUndefined();
+  });
+
   afterEach(() => {
     jest.useRealTimers();
     global.fetch = originalFetch;

@@ -104,31 +104,6 @@ export async function apiFetch<T>(
     }, effectiveTimeoutMs);
   }
 
-  // Spread `init` first so caller-provided top-level keys win, then re-apply
-  // `headers` so our default `Content-Type: application/json` is preserved
-  // unless the caller explicitly overrides it via `init.headers`.
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
-  });
-  if (res.status === 204) return undefined as T;
-  let body: T | ApiError | undefined;
-  try {
-    body = (await readResponseBody(res)) as T | ApiError | undefined;
-  } catch {
-    if (!res.ok) {
-      const err = new Error(res.statusText || "Request failed");
-      throw err;
-    }
-    throw new Error("Response body was not valid JSON");
-  }
-  if (!res.ok) {
-    const apiError = (body ?? {}) as Partial<ApiError>;
-    const err = new Error(apiError.message || res.statusText || "Request failed");
-    throw Object.assign(err, apiError);
   try {
     const res = await fetch(`${API_BASE}${path}`, {
       ...restInit,

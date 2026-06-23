@@ -1,11 +1,7 @@
 import type { Config } from "jest";
-import nextJest from "next/jest.js";
-
-const createJestConfig = nextJest({
-  dir: "./",
-});
 
 const config: Config = {
+  preset: "ts-jest",
   coverageProvider: "v8",
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
@@ -48,4 +44,4 @@ const config: Config = {
   coverageReporters: ["text", "json-summary", "lcov"],
 };
 
-export default createJestConfig(config);
+export default config;
