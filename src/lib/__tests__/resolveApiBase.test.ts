@@ -85,4 +85,15 @@ describe("resolveApiBase", () => {
 
     expect(warn).not.toHaveBeenCalled();
   });
+
+  it("calls console.warn via the default warn callback for http on a non-localhost host", () => {
+    const consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {});
+
+    resolveApiBase({
+      env: { NEXT_PUBLIC_AGENTPAY_API_BASE: "http://non-localhost.example.com" },
+      isProduction: false,
+    });
+
+    expect(consoleWarn).toHaveBeenCalled();
+  });
 });
