@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ApiKeysPage from "./page";
 
+const FAKE_KEY = "sk_live_abc123secretvalue";
 const mockItems = [{ prefix: "abc123", label: "my-key", createdAt: 1700000000 }];
 
 function mockFetchSuccess() {
@@ -67,4 +68,85 @@ it("calls DELETE and closes dialog when confirmed", async () => {
     expect(calls.some((c: string[]) => c[0].includes("/api/v1/api-keys/abc123"))).toBe(true);
   });
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+
+// --- reveal-once panel ---
+
+function mockFetchCreate() {
+  globalThis.fetch = jest.fn()
+    .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ items: [] }) } as unknown as Response)
+    .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ key: FAKE_KEY }) } as unknown as Response)
+    .mockResolvedValue({ ok: true, status: 200, json: async () => ({ items: [] }) } as unknown as Response);
+}
+
+beforeEach(() => {
+  Object.assign(navigator, {
+    clipboard: { writeText: jest.fn().mockResolvedValue(undefined) },
+  });
+});
+
+it("shows the panel masked after key creation", async () => {
+  mockFetchCreate();
+  render(<ApiKeysPage />);
+  fireEvent.change(screen.getByLabelText("Label"), { target: { value: "test" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Create" }).closest("form")!);
+  await waitFor(() => expect(screen.getByRole("status")).toBeInTheDocument());
+  expect(screen.getByRole("status")).not.toHaveTextContent(FAKE_KEY);
+  expect(screen.getByRole("status")).toHaveTextContent("****");
+});
+
+it("reveals the full key when Reveal is clicked", async () => {
+  mockFetchCreate();
+  render(<ApiKeysPage />);
+  fireEvent.change(screen.getByLabelText("Label"), { target: { value: "test" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Create" }).closest("form")!);
+  await waitFor(() => screen.getByRole("button", { name: "Reveal" }));
+  fireEvent.click(screen.getByRole("button", { name: "Reveal" }));
+  expect(screen.getByRole("status")).toHaveTextContent(FAKE_KEY);
+  expect(screen.getByRole("button", { name: "Hide" })).toHaveAttribute("aria-pressed", "true");
+});
+
+it("hides the key again when Hide is clicked", async () => {
+  mockFetchCreate();
+  render(<ApiKeysPage />);
+  fireEvent.change(screen.getByLabelText("Label"), { target: { value: "test" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Create" }).closest("form")!);
+  await waitFor(() => screen.getByRole("button", { name: "Reveal" }));
+  fireEvent.click(screen.getByRole("button", { name: "Reveal" }));
+  fireEvent.click(screen.getByRole("button", { name: "Hide" }));
+  expect(screen.getByRole("status")).not.toHaveTextContent(FAKE_KEY);
+});
+
+it("copies the full key to clipboard", async () => {
+  mockFetchCreate();
+  render(<ApiKeysPage />);
+  fireEvent.change(screen.getByLabelText("Label"), { target: { value: "test" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Create" }).closest("form")!);
+  await waitFor(() => screen.getByRole("button", { name: "Copy" }));
+  fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+  await waitFor(() =>
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(FAKE_KEY)
+  );
+});
+
+it("removes the panel when Done is clicked", async () => {
+  mockFetchCreate();
+  render(<ApiKeysPage />);
+  fireEvent.change(screen.getByLabelText("Label"), { target: { value: "test" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Create" }).closest("form")!);
+  await waitFor(() => screen.getByRole("button", { name: /done/i }));
+  fireEvent.click(screen.getByRole("button", { name: /done/i }));
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+});
+
+it("handles clipboard unavailable without throwing", async () => {
+  Object.assign(navigator, {
+    clipboard: { writeText: jest.fn().mockRejectedValue(new Error("no clipboard")) },
+  });
+  mockFetchCreate();
+  render(<ApiKeysPage />);
+  fireEvent.change(screen.getByLabelText("Label"), { target: { value: "test" } });
+  fireEvent.submit(screen.getByRole("button", { name: "Create" }).closest("form")!);
+  await waitFor(() => screen.getByRole("button", { name: "Copy" }));
+  expect(() => fireEvent.click(screen.getByRole("button", { name: "Copy" }))).not.toThrow();
 });

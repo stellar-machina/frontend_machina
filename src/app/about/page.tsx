@@ -1,4 +1,16 @@
+import Link from "next/link";
+
 export const metadata = { title: "About — AgentPay" };
+
+const surfaces = [
+  { label: "Service registry", href: "/services" },
+  { label: "Usage metering", href: "/usage" },
+  { label: "Billing quotes", href: "/docs" },
+  { label: "Audit log", href: "/events" },
+  { label: "Webhooks", href: "/webhooks" },
+  { label: "API keys", href: "/api-keys" },
+  { label: "Admin pause/unpause", href: "/admin" },
+];
 
 export default function AboutPage() {
   return (
@@ -17,8 +29,23 @@ export default function AboutPage() {
       <p className="text-zinc-700 dark:text-zinc-300">
         This dashboard exposes every read and write surface the backend
         provides: service registry, usage metering, billing quotes, audit
-        log, webhooks, API keys, and admin pause/unpause.
+        log, webhooks, API keys, and admin pause/unpause. Use the links below
+        to jump directly to each surface.
       </p>
+      <nav aria-label="Dashboard surfaces">
+        <ul className="space-y-2 rounded-md border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+          {surfaces.map((surface) => (
+            <li key={surface.href}>
+              <Link
+                href={surface.href}
+                className="block rounded-md px-3 py-2 text-blue-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:text-blue-300"
+              >
+                {surface.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </main>
   );
 }

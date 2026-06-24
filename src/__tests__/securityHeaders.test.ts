@@ -2,6 +2,7 @@ import {
   buildCsp,
   defaultSecurityHeaders,
   originOf,
+  resolveApiBase,
   type BuildSecurityHeadersOptions,
 } from "../lib/securityHeaders";
 
@@ -132,5 +133,11 @@ describe("defaultSecurityHeaders", () => {
     expect(headers["Content-Security-Policy"]).toContain(
       "connect-src 'self' https://api.staging.agentpay.io"
     );
+  });
+});
+
+describe("resolveApiBase (re-exported from securityHeaders)", () => {
+  it("returns the localhost default when no env var is set", () => {
+    expect(resolveApiBase({ env: {} })).toBe("http://localhost:3001");
   });
 });

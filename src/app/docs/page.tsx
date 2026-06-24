@@ -38,6 +38,17 @@ export default function DocsPage() {
         </a>{" "}
         — short prose for the most common endpoints.
       </p>
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        For the complete request/response contract of every endpoint the dashboard
+        calls, see the{" "}
+        <a
+          className="underline"
+          href="https://github.com/Agentpay-Org/Agentpay-frontend/blob/main/docs/api-integration.md"
+        >
+          dashboard API integration reference
+        </a>
+        .
+      </p>
       <dl className="space-y-4">
         {sections.map((s) => (
           <div key={s.h}>

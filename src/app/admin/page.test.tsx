@@ -9,7 +9,10 @@ type FetchResp = {
 };
 
 function mockFetchSequence(responses: FetchResp[]) {
-  const fetchMock = jest.fn<Promise<Response>, [input: RequestInfo | URL, init?: RequestInit]>() as unknown as jest.Mock;
+  const fetchMock = jest.fn<
+    Promise<Response>,
+    [input: RequestInfo | URL, init?: RequestInit]
+  >() as unknown as jest.Mock;
 
   fetchMock.mockImplementation(async () => {
     const callIndex = (fetchMock as jest.Mock).mock.calls.length - 1;
@@ -77,9 +80,10 @@ describe("AdminPage pause/unpause", () => {
     const pauseButtons = screen.getAllByRole("button", { name: /^Pause$/i });
     fireEvent.click(pauseButtons[pauseButtons.length - 1]);
 
-
     await waitFor(() => {
-      const calls = (fetchMock as jest.Mock).mock.calls.map((c: unknown[]) => String(c[0]));
+      const calls = (fetchMock as jest.Mock).mock.calls.map((c: unknown[]) =>
+        String(c[0]),
+      );
       expect(calls.some((p) => p.includes("/api/v1/admin/pause"))).toBe(true);
     });
 
@@ -87,24 +91,42 @@ describe("AdminPage pause/unpause", () => {
   });
 
   it("disables the toggle while the request is in flight to prevent double-submit", async () => {
-    let pauseResolve: any;
+    let pauseResolve!: (value: void) => void;
     const pausePromise = new Promise<void>((r) => {
       // @ts-ignore
       pauseResolve = r;
     });
 
-    const fetchMock = jest.fn<Promise<Response>, [input: RequestInfo | URL, init?: RequestInit]>() as unknown as jest.Mock;
+    const fetchMock = jest.fn<
+      Promise<Response>,
+      [input: RequestInfo | URL, init?: RequestInit]
+    >() as unknown as jest.Mock;
 
     fetchMock
-      .mockImplementationOnce(async () =>
-        ({ ok: true, status: 200, json: async () => ({ paused: false }) }) as unknown as Response
+      .mockImplementationOnce(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            json: async () => ({ paused: false }),
+          }) as unknown as Response,
       )
-      .mockImplementationOnce(async () =>
-        // pause request: hang until resolved
-        (pausePromise.then(() => ({ ok: true, status: 204, json: async () => ({}) })) as unknown as Response)
+      .mockImplementationOnce(
+        async () =>
+          // pause request: hang until resolved
+          pausePromise.then(() => ({
+            ok: true,
+            status: 204,
+            json: async () => ({}),
+          })) as unknown as Response,
       )
-      .mockImplementationOnce(async () =>
-        ({ ok: true, status: 200, json: async () => ({ paused: true }) }) as unknown as Response
+      .mockImplementationOnce(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            json: async () => ({ paused: true }),
+          }) as unknown as Response,
       );
 
     globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -124,12 +146,12 @@ describe("AdminPage pause/unpause", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Working…$/i }));
     fireEvent.click(screen.getByRole("button", { name: /^Working…$/i }));
 
-    pauseResolve?.();
+    pauseResolve(undefined);
 
     await screen.findByText(/Paused/i);
 
-    const pauseCalls = (fetchMock as jest.Mock).mock.calls.filter((c: unknown[]) =>
-      String(c[0]).includes("/api/v1/admin/pause")
+    const pauseCalls = (fetchMock as jest.Mock).mock.calls.filter(
+      (c: unknown[]) => String(c[0]).includes("/api/v1/admin/pause"),
     );
     expect(pauseCalls).toHaveLength(1);
   });
@@ -172,8 +194,9 @@ describe("AdminPage pause/unpause", () => {
     fireEvent.click(pauseButtons[pauseButtons.length - 1]);
 
     const alerts = await screen.findAllByRole("alert");
-    expect(alerts.some((a) => a.textContent?.toLowerCase().includes("boom"))).toBe(true);
-
+    expect(
+      alerts.some((a) => a.textContent?.toLowerCase().includes("boom")),
+    ).toBe(true);
   });
 
   it("handles toggle while already paused (unpause flow)", async () => {
@@ -189,14 +212,17 @@ describe("AdminPage pause/unpause", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Unpause$/i }));
 
     // Dialog confirm label is "Resume" when paused.
-    fireEvent.click(screen.getAllByRole("button", { name: /^Resume$/i }).pop()!);
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /^Resume$/i }).pop()!,
+    );
 
     await waitFor(() => {
-      const calls = (fetchMock as jest.Mock).mock.calls.map((c: unknown[]) => String(c[0]));
+      const calls = (fetchMock as jest.Mock).mock.calls.map((c: unknown[]) =>
+        String(c[0]),
+      );
       expect(calls.some((p) => p.includes("/api/v1/admin/unpause"))).toBe(true);
     });
 
     await screen.findByText(/Live/i);
   });
 });
-

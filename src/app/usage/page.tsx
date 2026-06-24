@@ -1,70 +1,98 @@
 "use client";
 
+import { Spinner } from "@/components/Spinner";
+import type { ApiError } from "@/lib/apiClient";
+import { apiGet, apiPost } from "@/lib/apiClient";
+import type { FormEvent } from "react";
 import { useState } from "react";
-import { resolveApiBase } from "@/lib/resolveApiBase";
 
 type QueryResult = {
   agent: string;
   serviceId: string;
   total: number;
-} | null;
+};
 
-const API_BASE = resolveApiBase();
+type UsageStatus =
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | { kind: "ok"; total?: number }
+  | { kind: "error"; message: string; requestId?: string };
+
+type QueryStatus =
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | { kind: "ok"; result: QueryResult | null }
+  | { kind: "error"; message: string; requestId?: string };
+
+function describeError(error: unknown): { message: string; requestId?: string } {
+  const apiError = error as Partial<ApiError> | null | undefined;
+  return {
+    message:
+      typeof apiError?.message === "string" && apiError.message.length > 0
+        ? apiError.message
+        : error instanceof Error
+          ? error.message
+          : "request failed",
+    requestId:
+      typeof apiError?.requestId === "string" && apiError.requestId.length > 0
+        ? apiError.requestId
+        : undefined,
+  };
+}
+
+function formatAlert(message: string, requestId?: string): string {
+  return requestId ? `${message} (request id: ${requestId})` : message;
+}
 
 export default function UsagePage() {
   const [agent, setAgent] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [requests, setRequests] = useState("");
-  const [status, setStatus] = useState<
-    { kind: "idle" } | { kind: "ok"; total: number } | { kind: "error"; message: string }
-  >({ kind: "idle" });
+  const [status, setStatus] = useState<UsageStatus>({ kind: "idle" });
   const [queryAgent, setQueryAgent] = useState("");
   const [queryService, setQueryService] = useState("");
-  const [queryResult, setQueryResult] = useState<QueryResult>(null);
-  const [queryError, setQueryError] = useState<string | null>(null);
+  const [queryResult, setQueryResult] = useState<QueryStatus>({ kind: "idle" });
+  const isRecording = status.kind === "loading";
+  const isQuerying = queryResult.kind === "loading";
 
-  const onRecord = async (event: React.FormEvent<HTMLFormElement>) => {
+  const onRecord = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isRecording) return;
     const requestsNum = Number(requests);
     if (!Number.isInteger(requestsNum) || requestsNum <= 0) {
       setStatus({ kind: "error", message: "requests must be a positive integer" });
       return;
     }
+
+    setStatus({ kind: "loading" });
     try {
-      const res = await fetch(`${API_BASE}/api/v1/usage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agent, serviceId, requests: requestsNum }),
+      const body = await apiPost<{ total: number }>("/api/v1/usage", {
+        agent,
+        serviceId,
+        requests: requestsNum,
       });
-      const body = await res.json();
-      if (!res.ok) {
-        setStatus({ kind: "error", message: body?.message ?? "request failed" });
-        return;
-      }
-      setStatus({ kind: "ok", total: body.total });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "network error";
-      setStatus({ kind: "error", message });
+      setStatus({ kind: "ok", total: body?.total });
+    } catch (error) {
+      const { message, requestId } = describeError(error);
+      setStatus({ kind: "error", message, requestId });
     }
   };
 
-  const onQuery = async (event: React.FormEvent<HTMLFormElement>) => {
+  const onQuery = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setQueryError(null);
+    if (isQuerying) return;
+    setQueryResult({ kind: "loading" });
+
     try {
-      const url = `${API_BASE}/api/v1/usage/${encodeURIComponent(queryAgent)}/${encodeURIComponent(queryService)}`;
-      const res = await fetch(url);
-      const body = await res.json();
-      if (!res.ok) {
-        setQueryError(body?.message ?? "query failed");
-        setQueryResult(null);
-        return;
-      }
-      setQueryResult(body);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "network error";
-      setQueryError(message);
-      setQueryResult(null);
+      const result = await apiGet<QueryResult>(
+        `/api/v1/usage/${encodeURIComponent(queryAgent)}/${encodeURIComponent(
+          queryService
+        )}`
+      );
+      setQueryResult({ kind: "ok", result: result ?? null });
+    } catch (error) {
+      const { message, requestId } = describeError(error);
+      setQueryResult({ kind: "error", message, requestId });
     }
   };
 
@@ -120,19 +148,22 @@ export default function UsagePage() {
           </label>
           <button
             type="submit"
-            className="self-start rounded-full bg-black px-5 py-2 text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:bg-white dark:text-black"
+            disabled={isRecording}
+            className="self-start rounded-full bg-black px-5 py-2 text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:opacity-50 dark:bg-white dark:text-black"
           >
-            Record
+            {isRecording ? <Spinner label="Recording…" /> : "Record"}
           </button>
         </form>
         {status.kind === "ok" && (
           <p role="status" className="text-sm text-emerald-700 dark:text-emerald-400">
-            Recorded. New total: {status.total}.
+            {typeof status.total === "number"
+              ? `Recorded. New total: ${status.total}.`
+              : "Recorded."}
           </p>
         )}
         {status.kind === "error" && (
           <p role="alert" className="text-sm text-rose-700 dark:text-rose-400">
-            {status.message}
+            {formatAlert(status.message, status.requestId)}
           </p>
         )}
       </section>
@@ -164,20 +195,21 @@ export default function UsagePage() {
           </label>
           <button
             type="submit"
-            className="self-start rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-zinc-700"
+            disabled={isQuerying}
+            className="self-start rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:opacity-50 dark:border-zinc-700"
           >
-            Query
+            {isQuerying ? <Spinner label="Querying…" /> : "Query"}
           </button>
         </form>
-        {queryResult && (
+        {queryResult.kind === "ok" && queryResult.result && (
           <p role="status" className="text-sm">
-            {queryResult.agent} / {queryResult.serviceId}: <strong>{queryResult.total}</strong>{" "}
-            request(s).
+            {queryResult.result.agent} / {queryResult.result.serviceId}:{" "}
+            <strong>{queryResult.result.total}</strong> request(s).
           </p>
         )}
-        {queryError && (
+        {queryResult.kind === "error" && (
           <p role="alert" className="text-sm text-rose-700 dark:text-rose-400">
-            {queryError}
+            {formatAlert(queryResult.message, queryResult.requestId)}
           </p>
         )}
       </section>
