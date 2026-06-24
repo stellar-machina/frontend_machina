@@ -39,28 +39,25 @@ async function readJson(res: Response): Promise<unknown> {
   return parsed === null ? undefined : parsed;
 }
 
-function createHttpError(status: number, body: unknown) {
+function createHttpError(status: number, body: unknown, statusText = "") {
   const apiError =
     body && typeof body === "object" ? (body as Partial<ApiError>) : undefined;
 
   const message =
     typeof apiError?.message === "string" && apiError.message.length > 0
       ? apiError.message
-      : typeof statusText === "string" && statusText.trim().length > 0
+      : statusText.trim().length > 0
         ? statusText
         : "Request failed";
 
   const err = new Error(message);
 
-  if (apiError) {
-    return Object.assign(err, apiError, {
-      error:
-        typeof apiError.error === "string" && apiError.error.length > 0
-          ? apiError.error
-          : "http_error",
-    });
-  }
-  return err;
+  return Object.assign(err, apiError ?? {}, {
+    error:
+      typeof apiError?.error === "string" && apiError.error.length > 0
+        ? apiError.error
+        : "http_error",
+  });
 }
 
 /**
@@ -122,14 +119,14 @@ export async function apiFetch<T>(
     } catch {
       if (!res.ok) {
         finish();
-        throw createHttpError(res.status, undefined);
+        throw createHttpError(res.status, undefined, res.statusText);
       }
       finish();
       throw new Error("Response body was not valid JSON");
     }
     if (!res.ok) {
       finish();
-      throw createHttpError(res.status, body);
+      throw createHttpError(res.status, body, res.statusText);
     }
     finish();
     return body as T;
@@ -150,7 +147,9 @@ export function apiPost<T>(
   path: string,
   body: unknown,
   init: ApiFetchInit = {},
-) => apiFetch<T>(path, { ...init, method: "POST", body: JSON.stringify(body) });
+) {
+  return apiFetch<T>(path, { ...init, method: "POST", body: JSON.stringify(body) });
+}
 export const apiPatch = <T>(
   path: string,
   body: unknown,

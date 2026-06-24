@@ -1,5 +1,6 @@
 "use client";
 
+import { Spinner } from "@/components/Spinner";
 import type { ApiError } from "@/lib/apiClient";
 import { apiGet, apiPost } from "@/lib/apiClient";
 import type { FormEvent } from "react";
@@ -13,12 +14,14 @@ type QueryResult = {
 
 type UsageStatus =
   | { kind: "idle" }
+  | { kind: "loading" }
   | { kind: "ok"; total?: number }
   | { kind: "error"; message: string; requestId?: string };
 
 type QueryStatus =
   | { kind: "idle" }
-  | { kind: "ok"; result: QueryResult }
+  | { kind: "loading" }
+  | { kind: "ok"; result: QueryResult | null }
   | { kind: "error"; message: string; requestId?: string };
 
 function describeError(error: unknown): { message: string; requestId?: string } {
@@ -49,17 +52,19 @@ export default function UsagePage() {
   const [queryAgent, setQueryAgent] = useState("");
   const [queryService, setQueryService] = useState("");
   const [queryResult, setQueryResult] = useState<QueryStatus>({ kind: "idle" });
+  const isRecording = status.kind === "loading";
+  const isQuerying = queryResult.kind === "loading";
 
   const onRecord = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isRecording) return;
-    setStatus({ kind: "idle" });
     const requestsNum = Number(requests);
     if (!Number.isInteger(requestsNum) || requestsNum <= 0) {
       setStatus({ kind: "error", message: "requests must be a positive integer" });
       return;
     }
 
+    setStatus({ kind: "loading" });
     try {
       const body = await apiPost<{ total: number }>("/api/v1/usage", {
         agent,
@@ -75,7 +80,8 @@ export default function UsagePage() {
 
   const onQuery = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setQueryResult({ kind: "idle" });
+    if (isQuerying) return;
+    setQueryResult({ kind: "loading" });
 
     try {
       const result = await apiGet<QueryResult>(

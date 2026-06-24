@@ -1,19 +1,11 @@
 import {
   type ApiError,
   ApiTimeoutError,
-  apiDelete,
   apiFetch,
   apiGet,
-  apiPatch,
-  apiPost,
 } from "../apiClient";
-import { resolveApiBase } from "../resolveApiBase";
 
 type ApiClientModule = typeof import("../apiClient");
-
-function mockFetch(implementation: jest.Mock) {
-  globalThis.fetch = implementation as unknown as typeof globalThis.fetch;
-}
 
 async function loadApiClient(
   env: { NEXT_PUBLIC_AGENTPAY_API_BASE?: string } = {},
@@ -63,8 +55,8 @@ describe("apiClient", () => {
     jest.resetModules();
   });
 
-  function mockFetch(fn: any) {
-    globalThis.fetch = fn;
+  function mockFetch(fn: unknown) {
+    globalThis.fetch = fn as typeof globalThis.fetch;
   }
 
   it("prefixes GETs with the localhost default base URL", async () => {
@@ -458,10 +450,14 @@ describe("apiClient", () => {
       }),
     );
 
-    const { apiPatch } = await loadApiClient();
     await expect(
       apiFetch<{ ok: boolean }>("/api/v1/things", { timeoutMs: 100 }),
     ).resolves.toEqual({ ok: true });
+
+    expect(fetchSignal?.aborted).toBe(false);
+    await jest.advanceTimersByTimeAsync(100);
+    expect(fetchSignal?.aborted).toBe(false);
+  });
 
   it("merges caller headers while allowing Content-Type overrides", async () => {
     const fetchMock = jest.fn(async (_url, init) => {
@@ -528,7 +524,7 @@ describe("apiClient", () => {
       Partial<ApiError>;
 
     expect(error).toBeInstanceOf(Error);
-    expect(error.message).toBe("Request failed with status 500");
+    expect(error.message).toBe("Request failed");
     expect((error as Partial<ApiError>).error).toBe("http_error");
   });
 
@@ -572,7 +568,7 @@ describe("apiClient", () => {
       Partial<ApiError>;
 
     expect(error).toBeInstanceOf(Error);
-    expect(error.message).toBe("Request failed with status 500");
+    expect(error.message).toBe("Internal Server Error");
   });
 
   it("falls back to Request failed when malformed JSON arrives without a status text", async () => {
@@ -589,7 +585,7 @@ describe("apiClient", () => {
       Partial<ApiError>;
 
     expect(error).toBeInstanceOf(Error);
-    expect(error.message).toBe("Request failed with status 500");
+    expect(error.message).toBe("Request failed");
   });
 
   it("uses Request failed when an error payload omits message and status text", async () => {
@@ -606,7 +602,7 @@ describe("apiClient", () => {
       Partial<ApiError>;
 
     expect(error).toBeInstanceOf(Error);
-    expect(error.message).toBe("Request failed with status 500");
+    expect(error.message).toBe("Request failed");
     expect((error as Partial<ApiError>).error).toBe("server_error");
   });
 
@@ -614,7 +610,7 @@ describe("apiClient", () => {
     mockFetch(jest.fn(async () => new Response("Bad gateway", { status: 502 })));
 
     await expect(apiGet("/api/v1/x")).rejects.toMatchObject({
-      message: "Request failed with status 502",
+      message: "Request failed",
       error: "http_error",
     });
   });
@@ -681,7 +677,26 @@ describe("apiClient", () => {
 
   it("propagates caller aborts through the composed signal", async () => {
     const callerController = new AbortController();
-    const callerAbort = new Error("Already cancelled");
+
+    mockFetch(
+      jest.fn(
+        (_url, init) =>
+          new Promise<Response>((_resolve, reject) => {
+            const signal = init?.signal;
+            signal?.addEventListener(
+              "abort",
+              () => reject(signal.reason),
+              { once: true }
+            );
+          })
+      )
+    );
+
+    const pending = apiFetch("/api/v1/slow", {
+      signal: callerController.signal,
+      timeoutMs: 500,
+    });
+    const callerAbort = new Error("Caller cancelled");
     callerAbort.name = "AbortError";
     callerController.abort(callerAbort);
 
@@ -732,23 +747,18 @@ describe("apiClient", () => {
 
     let fetchSignal: AbortSignal | undefined;
     mockFetch(
-      jest.fn(
-        (_url, init) =>
-          new Promise<Response>((_resolve, reject) => {
-            const signal = init?.signal;
-            if (signal?.aborted) {
-              reject(signal.reason);
-            } else {
-              signal?.addEventListener("abort", () => reject(signal.reason), {
-                once: true,
-              });
-            }
-          }),
-      ),
+      jest.fn(async (_url, init) => {
+        fetchSignal = init?.signal as AbortSignal;
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      })
     );
 
     await expect(
-      apiFetch("/api/v1/things", { signal: callerController.signal }),
-    ).rejects.toBe(callerAbort);
+      apiFetch<{ ok: boolean }>("/api/v1/things", { timeoutMs: 100 })
+    ).resolves.toEqual({ ok: true });
+
+    expect(fetchSignal?.aborted).toBe(false);
+    await jest.advanceTimersByTimeAsync(100);
+    expect(fetchSignal?.aborted).toBe(false);
   });
 });

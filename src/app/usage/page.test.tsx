@@ -186,7 +186,7 @@ describe("UsagePage", () => {
 
   it("shows busy state and disables submit while querying, and clears prior result", async () => {
     let resolveQuery: (value: unknown) => void;
-    globalThis.fetch = jest.fn().mockImplementation(() => {
+    apiGetMock.mockImplementationOnce(() => {
       return new Promise((resolve) => {
         resolveQuery = resolve;
       });
@@ -207,9 +207,10 @@ describe("UsagePage", () => {
 
     // Resolve first query
     resolveQuery!({
-      ok: true,
-      json: async () => ({ agent: "a", serviceId: "s", total: 10 }),
-    } as unknown as Response);
+      agent: "a",
+      serviceId: "s",
+      total: 10,
+    });
 
     await waitFor(() => {
       expect(screen.getByRole("status")).toHaveTextContent(/a \/ s: 10 request\(s\)/i);
@@ -220,7 +221,7 @@ describe("UsagePage", () => {
     
     // Create new promise for second query
     let resolveQuery2: (value: unknown) => void;
-    (globalThis.fetch as jest.Mock).mockImplementationOnce(() => {
+    apiGetMock.mockImplementationOnce(() => {
       return new Promise((resolve) => {
         resolveQuery2 = resolve;
       });
@@ -233,9 +234,10 @@ describe("UsagePage", () => {
     expect(screen.getByRole("status")).toHaveTextContent(/Querying…/i);
 
     resolveQuery2!({
-      ok: true,
-      json: async () => ({ agent: "b", serviceId: "s", total: 20 }),
-    } as unknown as Response);
+      agent: "b",
+      serviceId: "s",
+      total: 20,
+    });
 
     await waitFor(() => {
       expect(screen.getByRole("status")).toHaveTextContent(/b \/ s: 20 request\(s\)/i);
@@ -245,10 +247,7 @@ describe("UsagePage", () => {
   it("shows query error after a prior success", async () => {
     render(<UsagePage />);
 
-    globalThis.fetch = jest.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ agent: "a", serviceId: "s", total: 10 }),
-    } as unknown as Response);
+    apiGetMock.mockResolvedValueOnce({ agent: "a", serviceId: "s", total: 10 });
 
     fireEvent.change(screen.getAllByLabelText(/^Agent$/i)[1], { target: { value: "a" } });
     fireEvent.change(screen.getAllByLabelText(/^Service ID$/i)[1], { target: { value: "s" } });
@@ -259,10 +258,7 @@ describe("UsagePage", () => {
     });
 
     // Now error
-    globalThis.fetch = jest.fn().mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ message: "Not found" }),
-    } as unknown as Response);
+    apiGetMock.mockRejectedValueOnce({ message: "Not found" });
 
     fireEvent.click(screen.getByRole("button", { name: /Query/i }));
 
@@ -274,10 +270,7 @@ describe("UsagePage", () => {
   });
 
   it("handles an empty/zero total", async () => {
-    globalThis.fetch = jest.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ agent: "zero", serviceId: "s", total: 0 }),
-    } as unknown as Response);
+    apiGetMock.mockResolvedValueOnce({ agent: "zero", serviceId: "s", total: 0 });
 
     render(<UsagePage />);
     fireEvent.change(screen.getAllByLabelText(/^Agent$/i)[1], { target: { value: "zero" } });
@@ -291,12 +284,11 @@ describe("UsagePage", () => {
 
   it("shows busy state and blocks double-submit while recording", async () => {
     let resolveRecord: (value: unknown) => void;
-    const mockFetch = jest.fn().mockImplementation(() => {
+    apiPostMock.mockImplementationOnce(() => {
       return new Promise((resolve) => {
         resolveRecord = resolve;
       });
     });
-    globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
 
     render(<UsagePage />);
     fireEvent.change(screen.getAllByLabelText(/^Agent$/i)[0], { target: { value: "a" } });
@@ -318,16 +310,15 @@ describe("UsagePage", () => {
 
     // Resolve the promise
     resolveRecord!({
-      ok: true,
-      json: async () => ({ total: 5 }),
-    } as unknown as Response);
+      total: 5,
+    });
 
     await waitFor(() => {
       expect(screen.getByRole("status")).toHaveTextContent(/New total: 5/i);
     });
 
     // fetch should only have been called once despite the second submit
-    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(apiPostMock).toHaveBeenCalledTimes(1);
     expect(recordButton).not.toBeDisabled();
   });
 });

@@ -12,6 +12,8 @@ export function useLocalState<T>(
     try {
       const raw = window.localStorage.getItem(key);
       if (raw !== null) {
+        // localStorage is only available after mount; hydrate persisted state once.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setValue(JSON.parse(raw) as T);
       }
     } catch {

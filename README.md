@@ -133,8 +133,23 @@ shared `ApiError` envelope, the 204/no-body convention, and pause-flag semantics
 | Variable                        | Visibility                      | Default                 | Purpose                                                                                                                                                                         |
 | ------------------------------- | ------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_AGENTPAY_API_BASE` | public (bundled into client JS) | `http://localhost:3001` | Base URL for the AgentPay backend. Validated by `resolveApiBase()` in `src/lib/resolveApiBase.ts` and rejected in production if non-https except for `localhost` / `127.0.0.1`. |
+| `NEXT_PUBLIC_AGENTPAY_SITE_ORIGIN` | public (metadata route output) | `http://localhost:3000` | Canonical frontend origin used by `src/app/sitemap.ts` and `src/app/robots.ts`. Set this per deployment, for example `https://dashboard.example.com`; trailing slashes are trimmed. |
 
 Because the variable is `NEXT_PUBLIC_*`, its value is exposed to the browser. Never put API secrets in it - it is used only for routing public HTTP requests.
+
+## SEO
+
+The dashboard exposes Next.js metadata routes for crawler discovery and crawl
+control:
+
+- `src/app/sitemap.ts` emits canonical URLs for the public static routes:
+  `/`, `/about`, `/docs`, and `/changelog`.
+- `src/app/robots.ts` allows public crawling from `/` and explicitly
+  disallows operator-only dashboard surfaces: `/admin`, `/api-keys`,
+  `/webhooks`, and `/settings`.
+- Both metadata routes derive absolute URLs from
+  `NEXT_PUBLIC_AGENTPAY_SITE_ORIGIN`, defaulting to `http://localhost:3000` for
+  local development rather than hard-coding a production domain.
 
 ## Route map (frontend)
 
