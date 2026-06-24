@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPost, apiDelete } from "@/lib/apiClient";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { safeHref } from "@/lib/url";
+
 
 type Webhook = { id: string; url: string; events: string[]; createdAt: number };
 
@@ -102,7 +104,20 @@ export default function WebhooksPage() {
           {items.map((w) => (
             <li key={w.id} className="flex items-center justify-between gap-2 py-3">
               <div>
-                <p className="text-sm font-medium break-all">{w.url}</p>
+                <p className="text-sm font-medium break-all">
+                  {(() => {
+                    const validated = safeHref(w.url);
+                    if (validated.ok) {
+                      return (
+                        <a href={validated.href} target="_blank" rel="noopener noreferrer">
+                          {w.url}
+                        </a>
+                      );
+                    }
+                    return w.url;
+                  })()}
+
+                </p>
                 <p className="text-xs text-zinc-500">{w.events.join(", ")}</p>
               </div>
               <button

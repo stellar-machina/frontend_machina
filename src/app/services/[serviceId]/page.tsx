@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { use } from "react";
 import Link from "next/link";
 import { apiGet } from "@/lib/apiClient";
+import { KeyValueGrid } from "@/components/KeyValueGrid";
+import { Badge } from "@/components/Badge";
+import { CopyButton } from "@/components/CopyButton";
+import { formatStroops } from "@/lib/format";
 
 type Service = { serviceId: string; priceStroops: number };
 type Rollup = { serviceId: string; total: number; agents: number };
@@ -38,29 +42,47 @@ export default function ServiceDetailPage({
       <Link href="/services" className="text-sm text-zinc-500 hover:underline">
         ← Back to services
       </Link>
-      <h1 className="text-3xl font-semibold tracking-tight font-mono">{serviceId}</h1>
+      <h1 className="text-3xl font-semibold tracking-tight font-mono">
+        {serviceId}
+      </h1>
       {error && (
         <p role="alert" className="text-sm text-rose-600">
           {error}
         </p>
       )}
       {service && (
-        <dl className="grid grid-cols-2 gap-4">
-          <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-            <dt className="text-xs uppercase text-zinc-500">Price</dt>
-            <dd className="mt-1 text-2xl font-semibold">
-              {service.priceStroops} stroops
-            </dd>
-          </div>
-          {rollup && (
-            <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-              <dt className="text-xs uppercase text-zinc-500">Requests / agents</dt>
-              <dd className="mt-1 text-2xl font-semibold">
-                {rollup.total} / {rollup.agents}
-              </dd>
-            </div>
-          )}
-        </dl>
+        <div className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+          <KeyValueGrid
+            rows={[
+              {
+                label: "Service ID",
+                value: (
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">{serviceId}</span>
+                    <CopyButton value={serviceId} />
+                  </div>
+                ),
+              },
+              {
+                label: "Price",
+                value: `${formatStroops(service.priceStroops)} (${service.priceStroops} stroops)`,
+              },
+              {
+                label: "Usage",
+                value: rollup ? (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="ok">available</Badge>
+                    <span>
+                      {rollup.total} / {rollup.agents}
+                    </span>
+                  </div>
+                ) : (
+                  <Badge variant="neutral">absent</Badge>
+                ),
+              },
+            ]}
+          />
+        </div>
       )}
       <div className="flex gap-3">
         <Link

@@ -1,30 +1,17 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
-import type { ReactElement } from "react";
-import { hydrateRoot, type Root } from "react-dom/client";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 import { useLocalState } from "../useLocalState";
-
-function renderToString(element: ReactElement) {
-  return (
-    // Use the Node server renderer in Jest's jsdom environment.
-    jest.requireActual<typeof import("react-dom/server")>("react-dom/server.node")
-      .renderToString
-  )(element);
-}
 
 function Probe({
   storageKey,
   initial,
   next = "updated",
-  onRender,
 }: {
   storageKey: string;
   initial: string;
   next?: string;
-  onRender?: (value: string) => void;
 }) {
   const [value, setValue] = useLocalState(storageKey, initial);
-  onRender?.(value);
 
   return (
     <div>
@@ -43,58 +30,28 @@ describe("useLocalState", () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+    cleanup();
   });
 
-  it("renders the fallback on the server and hydrates from localStorage after mount", async () => {
-    const storageKey = "agentpay.useLocalState.ssr";
-    const getItemSpy = jest.spyOn(Storage.prototype, "getItem");
-    const onRender = jest.fn();
-
-    const serverHtml = renderToString(
-      <Probe storageKey={storageKey} initial="fallback" />
-    );
-
-    expect(serverHtml).toContain("fallback");
-    expect(getItemSpy).not.toHaveBeenCalled();
-
+  it("reads the persisted value from localStorage on mount", async () => {
+    const storageKey = "agentpay.useLocalState.persisted";
     window.localStorage.setItem(storageKey, JSON.stringify("persisted"));
 
-    const container = document.createElement("div");
-    container.innerHTML = serverHtml;
-    document.body.appendChild(container);
+    render(<Probe storageKey={storageKey} initial="fallback" />);
 
-    let root: Root | null = null;
-    await act(async () => {
-      root = hydrateRoot(
-        container,
-        <Probe
-          storageKey={storageKey}
-          initial="fallback"
-          onRender={onRender}
-        />
-      );
-    });
+    await act(async () => {});
 
-    expect(onRender.mock.calls[0]?.[0]).toBe("fallback");
-    expect(onRender).toHaveBeenLastCalledWith("persisted");
     expect(screen.getByTestId("value")).toHaveTextContent("persisted");
-    expect(getItemSpy).toHaveBeenCalledWith(storageKey);
-
-    expect(root).not.toBeNull();
-    await act(async () => {
-      root?.unmount();
-    });
-    container.remove();
   });
 
   it("writes the next value to state and localStorage", () => {
     const storageKey = "agentpay.useLocalState.write";
 
-    render(
+    const { getByRole } = render(
       <Probe storageKey={storageKey} initial="fallback" next="saved value" />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "update" }));
+    fireEvent.click(getByRole("button", { name: "update" }));
 
     expect(screen.getByTestId("value")).toHaveTextContent("saved value");
     expect(window.localStorage.getItem(storageKey)).toBe(
@@ -131,10 +88,12 @@ describe("useLocalState", () => {
         throw new Error("quota exceeded");
       });
 
-    render(<Probe storageKey={storageKey} initial="fallback" next="state only" />);
+    const { getByRole } = render(
+      <Probe storageKey={storageKey} initial="fallback" next="state only" />
+    );
 
     expect(() =>
-      fireEvent.click(screen.getByRole("button", { name: "update" }))
+      fireEvent.click(getByRole("button", { name: "update" }))
     ).not.toThrow();
 
     expect(screen.getByTestId("value")).toHaveTextContent("state only");

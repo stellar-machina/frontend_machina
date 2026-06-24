@@ -34,6 +34,10 @@ const openDialog = () => {
 };
 
 describe("ConfirmDialog", () => {
+  beforeEach(() => {
+    jest.restoreAllMocks();
+  });
+
   afterEach(() => {
     document.body.style.overflow = "";
   });
@@ -46,6 +50,42 @@ describe("ConfirmDialog", () => {
 
     expect(cancelButton).toHaveFocus();
     expect(dialog).toHaveAttribute("aria-describedby", description.id);
+  });
+
+  it("handles null activeElement when dialog opens", () => {
+    const getActiveElement = jest.spyOn(document, "activeElement", "get");
+    getActiveElement.mockReturnValue(null);
+
+    render(
+      <ConfirmDialog
+        open
+        title="Null active"
+        onConfirm={jest.fn()}
+        onCancel={jest.fn()}
+      />
+    );
+
+    expect(screen.getByRole("dialog", { name: /null active/i })).toBeInTheDocument();
+  });
+
+  it("ignores non-Escape, non-Tab keys without side effects", () => {
+    const onCancel = jest.fn();
+    const onConfirm = jest.fn();
+
+    render(
+      <ConfirmDialog
+        open
+        title="Key test"
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
+    );
+
+    const dialog = screen.getByRole("dialog", { name: /key test/i });
+    fireEvent.keyDown(dialog, { key: "ArrowDown" });
+
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(onConfirm).not.toHaveBeenCalled();
   });
 
   it("omits aria-describedby when no description is rendered", () => {
@@ -154,5 +194,27 @@ describe("ConfirmDialog", () => {
     dialog.focus();
     fireEvent.keyDown(dialog, { key: "Tab", shiftKey: true });
     expect(confirmButton).toHaveFocus();
+  });
+
+  it("wraps to dialog when no focusable children exist inside", () => {
+    render(<ConfirmDialogHarness />);
+
+    const { dialog } = openDialog();
+    dialog.querySelectorAll("button").forEach((b) => b.remove());
+
+    fireEvent.keyDown(dialog, { key: "Tab" });
+    expect(document.activeElement).toBe(dialog);
+  });
+
+  it("moves focus to the first focusable when Tab is pressed on an outside element", () => {
+    render(<ConfirmDialogHarness />);
+
+    const { dialog, cancelButton } = openDialog();
+
+    const outsideButton = screen.getByRole("button", { name: /outside action/i });
+    outsideButton.focus();
+
+    fireEvent.keyDown(dialog, { key: "Tab" });
+    expect(cancelButton).toHaveFocus();
   });
 });

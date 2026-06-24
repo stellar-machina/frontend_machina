@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { apiGet, apiPost } from "@/lib/apiClient";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { StatusDot } from "@/components/StatusDot";
@@ -48,35 +49,37 @@ export default function AdminPage() {
   const [pending, setPending] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // Used to detect and avoid stale status overwrites if an external change
-  // happens concurrently with our toggle request.
-  const [statusSeq, setStatusSeq] = useState(0);
+  /**
+   * Latest-wins stale-status guard.
+   *
+   * Each call to `load()` increments a monotonically increasing sequence number.
+   * Only the response for the latest in-flight call is allowed to update `paused`/`error`.
+   * This prevents out-of-order fetch responses from clobbering a newer state.
+   */
+  const loadSeqRef = useRef(0);
 
   const load = useCallback(async () => {
-    const seq = statusSeq + 1;
-    setStatusSeq(seq);
+    const callSeq = ++loadSeqRef.current;
     setError(null);
+
     try {
       const b = await apiGet<AdminStatus>("/api/v1/admin/status");
-      // Only accept the latest load result.
-      setPaused((prev) => {
-        // if paused changes between seq scheduling, allow overwrite.
-        // guarding with seq below ensures the latest promise wins.
-        return b.paused;
-      });
+      if (callSeq !== loadSeqRef.current) return;
+      setPaused(b.paused);
     } catch (e) {
+      if (callSeq !== loadSeqRef.current) return;
       setError((e as Error).message);
     }
-  }, [statusSeq]);
+  }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void load();
+  }, [load]);
 
   const toggleState = useMemo(() => {
     if (paused === null) return null;
+
+
     return getToggleState(paused);
   }, [paused]);
 
@@ -88,7 +91,6 @@ export default function AdminPage() {
   }, [toggleState]);
 
   const refreshAfterAction = useCallback(async () => {
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     await load();
   }, [load]);
 

@@ -1,0 +1,28 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`messages catalog matches the committed catalog snapshot 1`] = `
+{
+  "about": {
+    "heading": "About AgentPay",
+    "intro": "AgentPay is a pay-per-request payment protocol for autonomous AI agents and APIs, settled on Stellar via Soroban. Agents accrue usage against registered services off-chain; a settlement worker drains the usage counters and mirrors them on-chain.",
+    "navLabel": "Dashboard surfaces",
+    "surfacesIntro": "This dashboard exposes every read and write surface the backend provides: service registry, usage metering, billing quotes, audit log, webhooks, API keys, and admin pause/unpause. Use the links below to jump directly to each surface.",
+  },
+  "footer": {
+    "text": "AgentPay — machine-to-machine payments on Stellar. Pay per request.",
+  },
+  "home": {
+    "description": "Machine-to-machine payment protocol on Stellar. Pay-per-request billing for AI agents and APIs.",
+    "heading": "AgentPay",
+    "links": {
+      "agents": "Agents",
+      "docs": "Docs",
+      "services": "Manage services",
+      "stats": "View stats",
+      "stellar": "Stellar",
+      "usage": "Record usage",
+    },
+    "quickLinksLabel": "Quick links",
+  },
+}
+`;

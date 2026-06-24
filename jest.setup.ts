@@ -25,3 +25,14 @@ if (typeof global.Response === "undefined") {
   (global as unknown as { Response: typeof ResponsePolyfill }).Response =
     ResponsePolyfill as unknown as typeof global.Response;
 }
+
+jest.mock("next/font/google", () => ({
+  Geist: () => ({
+    variable: "--font-geist-sans",
+    style: { fontFamily: "Geist" },
+  }),
+  Geist_Mono: () => ({
+    variable: "--font-geist-mono",
+    style: { fontFamily: "Geist Mono" },
+  }),
+}));

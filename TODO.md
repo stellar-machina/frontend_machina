@@ -1,33 +1,9 @@
-# TODO - Admin pause/unpause confirmation hardening
-
-- [x] Update `src/app/admin/page.tsx`:
-
-  - [ ] Add typed ConfirmDialog guarded pause/unpause with explicit state-naming messages.
-  - [ ] Prevent accidental double submission: disable toggle while request in flight.
-  - [ ] Reflect pending status in UI (StatusDot/Badge).
-  - [ ] Surface success/failure via toast; keep existing `role="alert"` error path.
-  - [ ] Re-fetch status after action; handle concurrent external changes by reconciling with latest fetched `paused` state.
-  - [ ] Ensure accessible keyboard operability relies on ConfirmDialog.
-
-- [ ] Add comprehensive tests `src/app/admin/page.test.tsx`:
-  - [ ] Cancel makes no call
-  - [ ] Confirm posts correct endpoint
-  - [ ] Button disables mid-flight and prevents rapid double-click
-  - [ ] Status refreshes after action
-  - [ ] Edge cases: toggle while already paused, request failure, re-fetch after failure
-  - [ ] Ensure error path uses role="alert"
-
-- [ ] Update `README.md` with documentation noting kill-switch confirmation requirement.
-
-
-- [ ] Create git branch `blackboxai/security/admin-28-pause-confirmation` and commit.
-
+- [ ] Update src/app/admin/page.tsx with a real latest-wins stale-status guard using useRef.
+- [ ] Ensure load useCallback is stable (no statusSeq deps) and remove eslint-disable hacks for deps.
+- [ ] Add/extend unit tests in src/app/admin/page.test.tsx to verify out-of-order status responses are ignored, latest response wins, and toggle refresh works.
+- [ ] Add a JSDoc note documenting latest-wins semantics.
+- [ ] Run npm run lint, npm run typecheck, npm test, npm run build.
+- [ ] Verify tests cover edge cases (slow then fast status, toggle during in-flight status, unmount during fetch, load error).
+- [ ] Commit changes with message: refactor(admin): replace dead statusSeq with working latest-wins guard
 - [ ] Push branch to GitHub.
-
-- [ ] Run:
-  - [ ] `npm test`
-  - [ ] `npm run lint`
-  - [ ] `npm run typecheck`
-  - [ ] `npm run build`
-  - [ ] Ensure coverage >= 95% for changed page.
 

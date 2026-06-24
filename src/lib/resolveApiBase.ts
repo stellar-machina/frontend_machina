@@ -18,7 +18,7 @@ export type ResolveApiBaseOptions = {
   /**
    * Override the env var lookup. Useful for tests.
    */
-  env?: NodeJS.ProcessEnv;
+  env?: Partial<NodeJS.ProcessEnv>;
   /**
    * Override the current NODE_ENV check. Useful for tests.
    */

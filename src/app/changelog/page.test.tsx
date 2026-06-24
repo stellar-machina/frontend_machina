@@ -37,7 +37,22 @@ describe("ChangelogPage", () => {
 
     expect(await screen.findByRole("heading", { name: /v1.2.0/i }))
       .toBeInTheDocument();
+    expect(screen.getAllByRole("list")).toHaveLength(2);
     expect(screen.getByText("Added usage exports")).toBeInTheDocument();
+  });
+
+  it("renders an empty state when no changelog entries are returned", async () => {
+    mockApiGet.mockResolvedValue({ entries: [] });
+
+    render(<ChangelogPage />);
+
+    expect(
+      await screen.findByText("No changelog entries yet"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Release notes will appear here once updates are published."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
   });
 
   it("renders API errors as alerts", async () => {

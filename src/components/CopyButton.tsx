@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 
+/**
+ * Copies `value` to the clipboard on click and shows "Copied" for 1500 ms.
+ * Silently no-ops when `navigator.clipboard` is unavailable (e.g. non-HTTPS).
+ * The button carries `aria-live="polite"` so the state change is announced.
+ */
 export function CopyButton({ value, label = "Copy" }: { value: string; label?: string }) {
   const [copied, setCopied] = useState(false);
 
