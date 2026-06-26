@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiPost } from "@/lib/apiClient";
+import { PageShell } from "@/components/PageShell";
 
 export default function NewServicePage() {
   const router = useRouter();
@@ -31,11 +32,7 @@ export default function NewServicePage() {
   };
 
   return (
-    <main
-      id="main-content"
-      tabIndex={-1}
-      className="mx-auto flex min-h-[60vh] max-w-xl flex-col gap-6 p-8 focus:outline-none"
-    >
+    <PageShell maxWidth="xl" gap="6">
       <h1 className="text-3xl font-semibold tracking-tight">New service</h1>
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
@@ -71,6 +68,6 @@ export default function NewServicePage() {
           </p>
         )}
       </form>
-    </main>
+    </PageShell>
   );
 }

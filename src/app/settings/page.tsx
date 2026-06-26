@@ -1,14 +1,11 @@
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { PageShell } from "@/components/PageShell";
 
 export const metadata = { title: "Settings — AgentPay" };
 
 export default function SettingsPage() {
   return (
-    <main
-      id="main-content"
-      tabIndex={-1}
-      className="mx-auto flex min-h-[60vh] max-w-2xl flex-col gap-8 p-8 focus:outline-none"
-    >
+    <PageShell maxWidth="2xl" gap="8">
       <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-medium">Appearance</h2>
@@ -17,6 +14,6 @@ export default function SettingsPage() {
         </p>
         <ThemeToggle />
       </section>
-    </main>
+    </PageShell>
   );
 }
