@@ -298,7 +298,11 @@ When rendering links:
 
 ## Event log rendering
 
-The `/events` page renders server-supplied JSON payloads. Each payload is serialised through `safeStringify` (`src/lib/format.ts`) with a hard cap (`EVENT_PAYLOAD_MAX_CHARS`, default 5,000 chars) and a visible `…(truncated)` marker. Circular references, `BigInt`, functions, and malformed timestamps are replaced with safe sentinels so a bad payload can't crash the page.
+The `/events` page renders server-supplied JSON payloads with performance safeguards:
+
+- **Per-payload cap:** Each payload is serialised through `safeStringify` (`src/lib/format.ts`) with a hard cap (`EVENT_PAYLOAD_MAX_CHARS`, default 5,000 chars) and a visible `…(truncated)` marker. Circular references, `BigInt`, functions, and malformed timestamps are replaced with safe sentinels so a bad payload can't crash the page.
+- **Render count cap:** The list is capped at 50 rendered rows (`MAX_RENDERED_EVENTS`) to keep the DOM bounded, regardless of the backend `limit`. When the filtered list exceeds the cap, a "Showing 50 of N events." note appears above the list.
+- **Stable filtering:** The `useMemo` filter dependencies are minimal (`items`, `debouncedQuery`), so background polling does not trigger unnecessary re-renders when the underlying data is unchanged.
 
 ## Changelog empty state
 

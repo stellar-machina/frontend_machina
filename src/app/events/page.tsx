@@ -21,6 +21,7 @@ type EventsResponse = {
 };
 
 const EVENT_POLL_INTERVAL_MS = 5000;
+const MAX_RENDERED_EVENTS = 50;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object";
@@ -74,6 +75,14 @@ export default function EventsPage() {
     const needle = debouncedQuery.toLowerCase();
     return items.filter((item) => item.type.toLowerCase().includes(needle));
   }, [items, debouncedQuery]);
+
+  const renderedItems = useMemo(() => {
+    if (!visibleItems) return null;
+    return visibleItems.slice(0, MAX_RENDERED_EVENTS);
+  }, [visibleItems]);
+
+  const totalVisible = visibleItems?.length ?? 0;
+  const isTruncated = totalVisible > MAX_RENDERED_EVENTS;
 
   useEffect(() => {
     let cancelled = false;
@@ -191,40 +200,47 @@ export default function EventsPage() {
       )}
 
       {!loading && !error && visibleItems && visibleItems.length > 0 && (
-        <ol className="flex flex-col gap-3 text-sm">
-          {visibleItems.map((event, index) => {
-            const timestamp = safeFormatTimestamp(event.ts);
-            const numericTs =
-              typeof event.ts === "number"
-                ? event.ts
-                : typeof event.ts === "string"
-                  ? Number(event.ts)
-                  : Number.NaN;
-            const hasValidTs = Number.isFinite(numericTs);
+        <>
+          {isTruncated && (
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              Showing {MAX_RENDERED_EVENTS} of {totalVisible} events.
+            </p>
+          )}
+          <ol className="flex flex-col gap-3 text-sm">
+            {renderedItems!.map((event, index) => {
+              const timestamp = safeFormatTimestamp(event.ts);
+              const numericTs =
+                typeof event.ts === "number"
+                  ? event.ts
+                  : typeof event.ts === "string"
+                    ? Number(event.ts)
+                    : Number.NaN;
+              const hasValidTs = Number.isFinite(numericTs);
 
-            return (
-              <li
-                key={`${index}-${event.id}`}
-                className="rounded border border-zinc-200 p-3 dark:border-zinc-800"
-              >
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-                  <span className="break-all font-mono text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-300">
-                    {event.type}
-                  </span>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                    <time dateTime={timestamp} title={timestamp}>
-                      {timestamp}
-                    </time>
-                    {hasValidTs && <TimeAgo ts={numericTs} />}
+              return (
+                <li
+                  key={`${index}-${event.id}`}
+                  className="rounded border border-zinc-200 p-3 dark:border-zinc-800"
+                >
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+                    <span className="break-all font-mono text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-300">
+                      {event.type}
+                    </span>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                      <time dateTime={timestamp} title={timestamp}>
+                        {timestamp}
+                      </time>
+                      {hasValidTs && <TimeAgo ts={numericTs} />}
+                    </div>
                   </div>
-                </div>
-                <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded bg-zinc-50 p-3 font-mono text-xs text-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                  {safeStringify(event.payload)}
-                </pre>
-              </li>
-            );
-          })}
-        </ol>
+                  <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded bg-zinc-50 p-3 font-mono text-xs text-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                    {safeStringify(event.payload)}
+                  </pre>
+                </li>
+              );
+            })}
+          </ol>
+        </>
       )}
     </main>
   );
