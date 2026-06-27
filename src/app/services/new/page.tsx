@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiPost } from "@/lib/apiClient";
 import { PageShell } from "@/components/PageShell";
+import { TextField } from "@/components/TextField";
+import { parseNonNegativeInt } from "@/lib/validateNumber";
 
 export default function NewServicePage() {
   const router = useRouter();
@@ -15,14 +17,19 @@ export default function NewServicePage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const n = Number(priceStroops);
-    if (!Number.isInteger(n) || n < 0) {
-      setError("Price must be a non-negative integer.");
+
+    const parsed = parseNonNegativeInt(priceStroops);
+    if (!parsed.ok) {
+      setError(parsed.message);
       return;
     }
+
     setLoading(true);
     try {
-      await apiPost("/api/v1/services", { serviceId, priceStroops: n });
+      await apiPost("/api/v1/services", {
+        serviceId,
+        priceStroops: parsed.value,
+      });
       router.push("/services");
     } catch (err) {
       setError((err as Error).message);
@@ -45,16 +52,16 @@ export default function NewServicePage() {
             className="rounded-md border border-zinc-300 px-3 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-zinc-700 dark:bg-zinc-900"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Price (stroops / request)</span>
-          <input
-            required
-            inputMode="numeric"
-            value={priceStroops}
-            onChange={(e) => setPriceStroops(e.target.value)}
-            className="rounded-md border border-zinc-300 px-3 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-zinc-700 dark:bg-zinc-900"
-          />
-        </label>
+
+        <TextField
+          label="Price (stroops / request)"
+          inputMode="numeric"
+          required
+          value={priceStroops}
+          onChange={(e) => setPriceStroops(e.target.value)}
+          error={error}
+        />
+
         <button
           type="submit"
           disabled={loading}
@@ -62,6 +69,7 @@ export default function NewServicePage() {
         >
           {loading ? "Saving…" : "Register service"}
         </button>
+
         {error && (
           <p role="alert" className="text-sm text-rose-600">
             {error}
@@ -71,3 +79,4 @@ export default function NewServicePage() {
     </PageShell>
   );
 }
+

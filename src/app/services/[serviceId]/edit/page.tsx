@@ -3,6 +3,8 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { apiGet, apiPatch } from "@/lib/apiClient";
+import { TextField } from "@/components/TextField";
+import { parseNonNegativeInt } from "@/lib/validateNumber";
 
 type Service = { serviceId: string; priceStroops: number };
 
@@ -26,16 +28,17 @@ export default function EditServicePage({
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const n = Number(price);
-    if (!Number.isInteger(n) || n < 0) {
-      setError("Price must be a non-negative integer.");
+    const parsed = parseNonNegativeInt(price);
+    if (!parsed.ok) {
+      setError(parsed.message);
       return;
     }
+
     setLoading(true);
     try {
       await apiPatch(
         `/api/v1/services/${encodeURIComponent(serviceId)}/price`,
-        { priceStroops: n }
+        { priceStroops: parsed.value }
       );
       router.push(`/services/${encodeURIComponent(serviceId)}`);
     } catch (err) {
@@ -54,16 +57,14 @@ export default function EditServicePage({
       <h1 className="text-3xl font-semibold tracking-tight">Edit price</h1>
       <p className="font-mono text-sm text-zinc-500">{serviceId}</p>
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Price (stroops / request)</span>
-          <input
-            required
-            inputMode="numeric"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="rounded-md border border-zinc-300 px-3 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-zinc-700 dark:bg-zinc-900"
-          />
-        </label>
+        <TextField
+          label="Price (stroops / request)"
+          inputMode="numeric"
+          required
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          error={error}
+        />
         <button
           type="submit"
           disabled={loading}
@@ -71,11 +72,7 @@ export default function EditServicePage({
         >
           {loading ? "Saving…" : "Save"}
         </button>
-        {error && (
-          <p role="alert" className="text-sm text-rose-600">
-            {error}
-          </p>
-        )}
+
       </form>
     </main>
   );
