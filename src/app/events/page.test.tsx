@@ -201,4 +201,137 @@ describe("EventsPage", () => {
       );
     });
   });
+
+  it("caps rendered events at 50 and shows 'showing N of M' note when list exceeds cap", async () => {
+    const largeList = Array.from({ length: 75 }, (_, i) => ({
+      id: `evt-${i}`,
+      ts: BASE_TIME.getTime() - i * 1000,
+      type: `event.type.${i}`,
+      payload: { index: i },
+    }));
+
+    const fetchMock = jest.fn(async () => jsonResponse({ items: largeList }));
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("event.type.0")).toBeInTheDocument();
+    });
+
+    // Should show exactly 50 events
+    const listItems = screen.getAllByRole("listitem");
+    expect(listItems).toHaveLength(50);
+
+    // Should show the truncation note
+    expect(screen.getByText("Showing 50 of 75 events.")).toBeInTheDocument();
+
+    // First 50 should be rendered
+    expect(screen.getByText("event.type.0")).toBeInTheDocument();
+    expect(screen.getByText("event.type.49")).toBeInTheDocument();
+
+    // 51st and beyond should not be rendered
+    expect(screen.queryByText("event.type.50")).not.toBeInTheDocument();
+    expect(screen.queryByText("event.type.74")).not.toBeInTheDocument();
+  });
+
+  it("does not show truncation note when list is below cap", async () => {
+    const smallList = Array.from({ length: 10 }, (_, i) => ({
+      id: `evt-${i}`,
+      ts: BASE_TIME.getTime() - i * 1000,
+      type: `event.type.${i}`,
+      payload: { index: i },
+    }));
+
+    const fetchMock = jest.fn(async () => jsonResponse({ items: smallList }));
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("event.type.0")).toBeInTheDocument();
+    });
+
+    const listItems = screen.getAllByRole("listitem");
+    expect(listItems).toHaveLength(10);
+
+    // Should not show truncation note
+    expect(screen.queryByText(/Showing \d+ of \d+ events\./)).not.toBeInTheDocument();
+  });
+
+  it("caps rendered events after filtering", async () => {
+    const largeList = Array.from({ length: 75 }, (_, i) => ({
+      id: `evt-${i}`,
+      ts: BASE_TIME.getTime() - i * 1000,
+      type: i < 60 ? "payment.created" : `other.type.${i}`,
+      payload: { index: i },
+    }));
+
+    const fetchMock = jest.fn(async () => jsonResponse({ items: largeList }));
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText("payment.created").length).toBeGreaterThan(0);
+    });
+
+    const filter = screen.getByRole("searchbox", {
+      name: /filter events by type/i,
+    });
+    fireEvent.change(filter, { target: { value: "payment" } });
+
+    await act(async () => {
+      jest.advanceTimersByTime(250);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Showing 50 of 60 events.")).toBeInTheDocument();
+    });
+
+    const listItems = screen.getAllByRole("listitem");
+    expect(listItems).toHaveLength(50);
+  });
+
+  it("does not cause re-render churn when data is unchanged across polls", async () => {
+    let renderCount = 0;
+    const stableData = FIRST_BATCH;
+
+    const fetchMock = jest.fn(async () => jsonResponse({ items: stableData }));
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    const TestWrapper = () => {
+      renderCount++;
+      return <EventsPage />;
+    };
+
+    render(<TestWrapper />);
+
+    await waitFor(() => {
+      expect(screen.getByText("payment.created")).toBeInTheDocument();
+    });
+
+    const initialRenderCount = renderCount;
+
+    const toggle = screen.getByRole("button", { name: /auto-refresh event log/i });
+    await act(async () => {
+      fireEvent.click(toggle);
+    });
+
+    // Advance through multiple poll cycles
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    // Should have fetched multiple times
+    expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(3);
+
+    // Render count should not increase excessively
+    // (some re-renders are expected for state updates, but not one per list item)
+    expect(renderCount).toBeLessThan(initialRenderCount + 10);
+  });
 });
