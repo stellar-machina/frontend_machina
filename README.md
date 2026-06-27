@@ -234,6 +234,10 @@ The following frontend routes are defined under `src/app/`:
 
 The home page (`src/app/page.tsx`) renders the primary navigation entry points (Manage services, View stats, Record usage, Agents, Docs) and the external Stellar link inside a `<nav aria-label="Quick links">` landmark with a semantic `<ul>` / `<li>` list structure. This improves discoverability for screen-reader users.
 
+## 404 page recovery links
+
+The 404 page (`src/app/not-found.tsx`) renders a `<nav aria-label="Helpful links">` landmark below the error message with quick-return links to four primary surfaces (Home, Services, Stats, Docs). This gives users a semantic, keyboard-accessible path back into the app without relying on the browser back button. The navigation uses a `<ul>` / `<li>` list structure and all links include `focus-visible` outlines for keyboard accessibility.
+
 ## Security headers
 
 A baseline security header set (CSP, `X-Frame-Options: DENY`, `Referrer-Policy`, `X-Content-Type-Options`, `Permissions-Policy`, HSTS) is wired up in `next.config.ts` via `src/lib/securityHeaders.ts`. The CSP `connect-src` directive tracks `NEXT_PUBLIC_AGENTPAY_API_BASE` automatically; `<a href>` links to external sites (`https://stellar.org`, etc.) remain navigable.
