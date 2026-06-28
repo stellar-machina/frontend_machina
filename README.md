@@ -397,6 +397,13 @@ The root layout keeps the home route on the default `AgentPay` title and applies
 
 The `/about` page now exposes direct links to the dashboard surfaces described in its copy: `/services`, `/usage`, `/docs`, `/events`, `/webhooks`, `/api-keys`, and `/admin`.
 
+## Form validation
+
+Forms in the application (such as the New Service form `/services/new`) follow these validation and accessibility standards:
+- **Shared Primitive Components:** Reusable input fields use the `TextField` component (`src/components/TextField.tsx`) and standard `Button` components.
+- **Per-Field Validation Errors:** Local validation errors (e.g. invalid inputs or formatting issues verified via `src/lib/validateNumber.ts`) are passed directly to the `TextField`'s `error` prop. This flips `aria-invalid` to `true` and attaches the message using `aria-describedby` dynamically.
+- **Page-Level Alerts:** Generic API errors and backend validation failures (e.g. `invalid_request`) are rendered at the page level inside a dedicated alert region with `role="alert"` so assistive technologies announce them immediately.
+
 ## Services list paging
 
 The `/services` page now uses server-driven pagination with the shared `Spinner`, `EmptyState`, and `Pagination` components.
