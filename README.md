@@ -308,6 +308,10 @@ The `/events` page renders server-supplied JSON payloads with performance safegu
 
 The `/changelog` page keeps using `useApi("/api/v1/changelog")` for loading release notes. When the backend returns `{ entries: [] }`, it renders the shared `EmptyState` component with a clear "No changelog entries yet" message instead of an empty list. This branch is constant-time and adds no extra network calls.
 
+## Webhooks empty and loading states
+
+The `/webhooks` page shows the shared `Spinner` component during the initial fetch. Once the list resolves, if it is empty, it renders the `EmptyState` component with "No webhooks registered yet" and helpful guidance. When webhooks are present, they are rendered inside an accessible region for better screen-reader discovery.
+
 ## Formatting conventions
 
 The frontend formats currency (Stroops / XLM) consistently using the helper `formatStroops` (located in `src/lib/format.ts`):
