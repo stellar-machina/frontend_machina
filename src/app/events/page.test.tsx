@@ -334,4 +334,129 @@ describe("EventsPage", () => {
     // (some re-renders are expected for state updates, but not one per list item)
     expect(renderCount).toBeLessThan(initialRenderCount + 10);
   });
+
+  it("renders spinner/busy region during initial load, which goes away after load", async () => {
+    let resolveFetch: (value: Response) => void = () => {};
+    const fetchPromise = new Promise<Response>((resolve) => {
+      resolveFetch = resolve;
+    });
+    const fetchMock = jest.fn(() => fetchPromise);
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    // Assert spinner is present and busy region has correct aria attributes
+    const statusElements = screen.getAllByRole("status");
+    const busyRegion = statusElements.find((el) => el.getAttribute("aria-busy") === "true");
+    expect(busyRegion).toBeDefined();
+    expect(busyRegion).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByText("Loading events")).toBeInTheDocument();
+
+    // Resolve the fetch
+    await act(async () => {
+      resolveFetch(jsonResponse({ items: FIRST_BATCH }));
+    });
+
+    // Assert spinner/busy region is gone
+    await waitFor(() => {
+      expect(screen.queryAllByRole("status")).toHaveLength(0);
+    });
+    expect(screen.getByText("payment.created")).toBeInTheDocument();
+  });
+
+  it("does not render/flash spinner during background auto-refresh", async () => {
+    let resolveFirstFetch: (value: Response) => void = () => {};
+    const firstFetchPromise = new Promise<Response>((resolve) => {
+      resolveFirstFetch = resolve;
+    });
+
+    let resolveSecondFetch: (value: Response) => void = () => {};
+    const secondFetchPromise = new Promise<Response>((resolve) => {
+      resolveSecondFetch = resolve;
+    });
+
+    let resolveThirdFetch: (value: Response) => void = () => {};
+    const thirdFetchPromise = new Promise<Response>((resolve) => {
+      resolveThirdFetch = resolve;
+    });
+
+    let call = 0;
+    const fetchMock = jest.fn(() => {
+      call += 1;
+      if (call === 1) return firstFetchPromise;
+      if (call === 2) return secondFetchPromise;
+      return thirdFetchPromise;
+    });
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    // 1. Initial load
+    expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
+    await act(async () => {
+      resolveFirstFetch(jsonResponse({ items: FIRST_BATCH }));
+    });
+    await waitFor(() => {
+      expect(screen.queryAllByRole("status")).toHaveLength(0);
+    });
+
+    // 2. Turn on auto-refresh (triggers load(false) on useEffect effect restart)
+    const toggle = screen.getByRole("button", { name: /auto-refresh event log/i });
+    await act(async () => {
+      fireEvent.click(toggle);
+    });
+
+    // Resolve the toggle-triggered load(false) fetch
+    await act(async () => {
+      resolveSecondFetch(jsonResponse({ items: FIRST_BATCH }));
+    });
+    await waitFor(() => {
+      expect(screen.queryAllByRole("status")).toHaveLength(0);
+    });
+
+    // 3. Advance timer to trigger background auto-refresh (load(true))
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    // Assert third fetch is pending, but spinner is NOT shown (because background auto-refresh shouldn't trigger loading state)
+    expect(screen.queryAllByRole("status")).toHaveLength(0);
+
+    // Resolve third fetch
+    await act(async () => {
+      resolveThirdFetch(jsonResponse({ items: REFRESH_BATCH }));
+    });
+
+    // Assert updated data is present
+    await waitFor(() => {
+      expect(screen.getByText("audit.logged")).toBeInTheDocument();
+    });
+    expect(screen.queryAllByRole("status")).toHaveLength(0);
+  });
+
+  it("shows error and hides spinner when load fails", async () => {
+    let rejectFetch: (reason: Error) => void = () => {};
+    const fetchPromise = new Promise<Response>((_, reject) => {
+      rejectFetch = reject;
+    });
+    const fetchMock = jest.fn(() => fetchPromise);
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    // Assert initial spinner is shown
+    expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
+
+    // Reject fetch with error
+    await act(async () => {
+      rejectFetch(new Error("API Error"));
+    });
+
+    // Assert spinner is gone and error is shown
+    await waitFor(() => {
+      expect(screen.queryAllByRole("status")).toHaveLength(0);
+      expect(screen.getByRole("alert")).toHaveTextContent("API Error");
+    });
+  });
 });
+
