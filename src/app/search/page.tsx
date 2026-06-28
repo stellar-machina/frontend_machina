@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiGet } from "@/lib/apiClient";
 import { useDebounce } from "@/lib/useDebounce";
 import { SearchBar } from "@/components/SearchBar";
@@ -12,6 +12,16 @@ export default function SearchPage() {
   const debounced = useDebounce(q, 250);
   const [items, setItems] = useState<Service[] | null>(null);
   const visibleItems = debounced ? items : null;
+
+  // Derive live region text from items and debounced query
+  const liveRegionText = useMemo(() => {
+    if (!debounced) return "";
+    if (!items) return "";
+    const count = items.length;
+    return count === 0
+      ? `No matches for "${debounced}"`
+      : `${count} result${count === 1 ? "" : "s"} for "${debounced}"`;
+  }, [debounced, items]);
 
   useEffect(() => {
     if (!debounced) return;
@@ -30,6 +40,9 @@ export default function SearchPage() {
     >
       <h1 className="text-3xl font-semibold tracking-tight">Search</h1>
       <SearchBar value={q} onChange={setQ} placeholder="Search services…" />
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {liveRegionText}
+      </div>
       {visibleItems && visibleItems.length === 0 && (
         <p className="text-sm text-zinc-500">No matches.</p>
       )}

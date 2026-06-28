@@ -196,6 +196,23 @@ pulse animation is disabled for users who request reduced motion via the
 satisfies [WCAG 4.1.3 Status Messages](https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html).
 Behaviour is covered by [`src/app/loading.test.tsx`](src/app/loading.test.tsx).
 
+### Search result announcements
+
+The search page ([`src/app/search/page.tsx`](src/app/search/page.tsx)) includes a
+visually-hidden `aria-live="polite"` region that announces the number of search results
+to screen readers after the debounced query settles. This ensures assistive-technology
+users receive feedback about result counts without focus being stolen from the search
+input. The announcement format is:
+- "N results for 'query'" for one or more matches
+- "No matches for 'query'" when the search returns zero results or fails
+- No announcement for empty queries
+
+The live region coordinates with the 250ms debounce timing to avoid spamming announcements
+on every keystroke. The region is marked with `aria-atomic="true"` and uses the `sr-only`
+class for visual hiding. This implementation satisfies
+[WCAG 4.1.3 Status Messages](https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html).
+Behaviour is covered by [`src/app/search/page.test.tsx`](src/app/search/page.test.tsx).
+
 ## API integration
 
 See [docs/api-integration.md](docs/api-integration.md) for the complete reference of
