@@ -419,6 +419,7 @@ The `/agents` page lists every agent identity seen by the backend, paginated wit
 - Each row is a `<Link>` to `/agents/:agent` with the identifier fully `encodeURIComponent`-encoded, so agents with slashes or other special characters route correctly.
 - `Pagination` hides itself automatically when `pageCount ≤ 1`, so no pagination bar appears for a single-page result.
 - Backend errors are surfaced as a `role="alert"` paragraph; the pagination bar is suppressed while an error is shown.
+- The single-agent view (`/agents/:agent`) utilizes a semantic `<Breadcrumb>` trail for accessible orientation.
 
 ## Commands
 
