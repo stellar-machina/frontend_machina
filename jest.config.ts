@@ -34,6 +34,8 @@ const config: Config = {
     "./src/components/TextField.tsx": { statements: 100, branches: 100, functions: 100, lines: 100 },
     "./src/components/ThemeToggle.tsx": { statements: 100, branches: 100, functions: 100, lines: 100 },
     "./src/components/ToastProvider.tsx": { statements: 100, branches: 100, functions: 100, lines: 100 },
+    "./src/app/docs/page.tsx": { statements: 100, branches: 100, functions: 100, lines: 100 },
+    "./src/components/CurlBlock.tsx": { statements: 100, branches: 100, functions: 100, lines: 100 },
     "./src/lib/apiClient.ts": { statements: 80, branches: 80, functions: 70, lines: 80 },
     "./src/lib/resolveApiBase.ts": { statements: 100, branches: 100, functions: 100, lines: 100 },
     "./src/lib/securityHeaders.ts": { statements: 100, branches: 100, functions: 100, lines: 100 },
