@@ -1,4 +1,5 @@
 import { PageShell } from "@/components/PageShell";
+import { messages } from "@/lib/messages";
 
 export const metadata = { title: "Docs — AgentPay" };
 
@@ -28,24 +29,23 @@ const sections = [
 export default function DocsPage() {
   return (
     <PageShell maxWidth="3xl" gap="6">
-      <h1 className="text-3xl font-semibold tracking-tight">API documentation</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">{messages.docs.heading}</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Companion to{" "}
+        {messages.docs.introCompanionPrefix}
         <a className="underline" href="/api/v1/openapi.json">
-          GET /api/v1/openapi.json
-        </a>{" "}
-        — short prose for the most common endpoints.
+          {messages.docs.introOpenApi}
+        </a>
+        {messages.docs.introCompanionSuffix}
       </p>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        For the complete request/response contract of every endpoint the dashboard
-        calls, see the{" "}
+        {messages.docs.referencePrefix}
         <a
           className="underline"
           href="https://github.com/Agentpay-Org/Agentpay-frontend/blob/main/docs/api-integration.md"
         >
-          dashboard API integration reference
+          {messages.docs.referenceLink}
         </a>
-        .
+        {messages.docs.referenceSuffix}
       </p>
       <dl className="space-y-4">
         {sections.map((s) => (
