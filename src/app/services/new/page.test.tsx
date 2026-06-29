@@ -197,11 +197,19 @@ describe("NewServicePage", () => {
     expect(submitButton).toBeDisabled();
     expect(submitButton).toHaveTextContent("Saving…");
 
+    // Button should have aria-busy while loading
+    expect(submitButton).toHaveAttribute("aria-busy", "true");
+
     // Resolve post request
     resolvePost({});
 
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith("/services");
+    });
+
+    // aria-busy should be removed after submission
+    await waitFor(() => {
+      expect(submitButton).not.toHaveAttribute("aria-busy");
     });
   });
 });
