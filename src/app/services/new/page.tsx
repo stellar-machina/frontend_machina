@@ -64,6 +64,7 @@ export default function NewServicePage() {
 
         <Button
           type="submit"
+          loading={loading}
           disabled={loading}
           className="self-start"
         >

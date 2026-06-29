@@ -16,16 +16,19 @@ const ring =
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: Variant;
+  loading?: boolean;
 };
 
 export function Button({
   variant = "primary",
+  loading = false,
   className = "",
   ...rest
 }: ButtonProps) {
   return (
     <button
       {...rest}
+      aria-busy={loading || undefined}
       className={`rounded-full px-5 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${ring} ${className}`}
     />
   );
