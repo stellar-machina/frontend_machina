@@ -113,7 +113,7 @@ export default function ServicesPage() {
             <li key={s.serviceId}>
               <Link
                 href={`/services/${encodeURIComponent(s.serviceId)}`}
-                className="flex items-center justify-between py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="-mx-4 flex items-center justify-between rounded-lg px-4 py-3 transition-colors hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:hover:bg-zinc-900"
               >
                 <span className="font-mono text-sm">{s.serviceId}</span>
                 <span className="text-sm text-zinc-600 dark:text-zinc-400">

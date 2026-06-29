@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { SearchBar } from "@/components/SearchBar";
 import { TimeAgo } from "@/components/TimeAgo";
+import { Spinner } from "@/components/Spinner";
 import { apiGet } from "@/lib/apiClient";
 import { safeFormatTimestamp, safeStringify } from "@/lib/format";
 import { useDebounce } from "@/lib/useDebounce";
@@ -21,11 +22,24 @@ type EventsResponse = {
 };
 
 const EVENT_POLL_INTERVAL_MS = 5000;
+const MAX_RENDERED_EVENTS = 50;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object";
 }
 
+/**
+ * Parse a loosely-typed EventsResponse into a list of AppEvents.
+ *
+ * Supports two response shapes:
+ * - { items: AppEvent[] }
+ * - { events: AppEvent[] }
+ *
+ * Each event field is validated or coerced to ensure it matches the AppEvent type.
+ * Specifically, the 'ts' field is coerced to null if it's not a number, string, or null.
+ *
+ * @throws {Error} if the payload is not an object or does not contain an array of items/events.
+ */
 function parseEventsResponse(body: EventsResponse): AppEvent[] {
   const items = Array.isArray(body.items)
     ? body.items
@@ -42,9 +56,15 @@ function parseEventsResponse(body: EventsResponse): AppEvent[] {
       throw new Error("Malformed events payload");
     }
 
+    const ts = item.ts;
+    const validatedTs: AppEvent["ts"] =
+      typeof ts === "number" || typeof ts === "string" || ts === null
+        ? ts
+        : null;
+
     return {
       id: typeof item.id === "string" ? item.id : String(item.id ?? index),
-      ts: item.ts as AppEvent["ts"],
+      ts: validatedTs,
       type: typeof item.type === "string" ? item.type : String(item.type ?? ""),
       payload: "payload" in item ? item.payload : undefined,
     };
@@ -74,6 +94,14 @@ export default function EventsPage() {
     const needle = debouncedQuery.toLowerCase();
     return items.filter((item) => item.type.toLowerCase().includes(needle));
   }, [items, debouncedQuery]);
+
+  const renderedItems = useMemo(() => {
+    if (!visibleItems) return null;
+    return visibleItems.slice(0, MAX_RENDERED_EVENTS);
+  }, [visibleItems]);
+
+  const totalVisible = visibleItems?.length ?? 0;
+  const isTruncated = totalVisible > MAX_RENDERED_EVENTS;
 
   useEffect(() => {
     let cancelled = false;
@@ -170,7 +198,11 @@ export default function EventsPage() {
         </p>
       )}
 
-      {loading && !error && <p>Loading…</p>}
+      {loading && !error && (
+        <div role="status" aria-busy="true" className="flex justify-center py-10">
+          <Spinner label="Loading events" />
+        </div>
+      )}
 
       {!loading && !error && visibleItems && visibleItems.length === 0 && (
         <EmptyState
@@ -191,40 +223,47 @@ export default function EventsPage() {
       )}
 
       {!loading && !error && visibleItems && visibleItems.length > 0 && (
-        <ol className="flex flex-col gap-3 text-sm">
-          {visibleItems.map((event, index) => {
-            const timestamp = safeFormatTimestamp(event.ts);
-            const numericTs =
-              typeof event.ts === "number"
-                ? event.ts
-                : typeof event.ts === "string"
-                  ? Number(event.ts)
-                  : Number.NaN;
-            const hasValidTs = Number.isFinite(numericTs);
+        <>
+          {isTruncated && (
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              Showing {MAX_RENDERED_EVENTS} of {totalVisible} events.
+            </p>
+          )}
+          <ol className="flex flex-col gap-3 text-sm">
+            {renderedItems!.map((event, index) => {
+              const timestamp = safeFormatTimestamp(event.ts);
+              const numericTs =
+                typeof event.ts === "number"
+                  ? event.ts
+                  : typeof event.ts === "string"
+                    ? Number(event.ts)
+                    : Number.NaN;
+              const hasValidTs = Number.isFinite(numericTs);
 
-            return (
-              <li
-                key={`${index}-${event.id}`}
-                className="rounded border border-zinc-200 p-3 dark:border-zinc-800"
-              >
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-                  <span className="break-all font-mono text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-300">
-                    {event.type}
-                  </span>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                    <time dateTime={timestamp} title={timestamp}>
-                      {timestamp}
-                    </time>
-                    {hasValidTs && <TimeAgo ts={numericTs} />}
+              return (
+                <li
+                  key={`${index}-${event.id}`}
+                  className="rounded border border-zinc-200 p-3 dark:border-zinc-800"
+                >
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+                    <span className="break-all font-mono text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-300">
+                      {event.type}
+                    </span>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                      <time dateTime={timestamp} title={timestamp}>
+                        {timestamp}
+                      </time>
+                      {hasValidTs && <TimeAgo ts={numericTs} />}
+                    </div>
                   </div>
-                </div>
-                <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded bg-zinc-50 p-3 font-mono text-xs text-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                  {safeStringify(event.payload)}
-                </pre>
-              </li>
-            );
-          })}
-        </ol>
+                  <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded bg-zinc-50 p-3 font-mono text-xs text-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                    {safeStringify(event.payload)}
+                  </pre>
+                </li>
+              );
+            })}
+          </ol>
+        </>
       )}
     </main>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import Link from "next/link";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import { apiGet } from "@/lib/apiClient";
 
 type Usage = { agent: string; items: { serviceId: string; total: number }[] };
@@ -35,9 +35,7 @@ export default function AgentDetailPage({
       tabIndex={-1}
       className="mx-auto flex min-h-[60vh] max-w-3xl flex-col gap-6 p-8 focus:outline-none"
     >
-      <Link href="/agents" className="text-sm text-zinc-500 hover:underline">
-        ← Back to agents
-      </Link>
+      <Breadcrumb items={[{ label: "Agents", href: "/agents" }, { label: agent }]} />
       <h1 className="text-3xl font-semibold tracking-tight font-mono">{agent}</h1>
       {error && (
         <p role="alert" className="text-sm text-rose-600">

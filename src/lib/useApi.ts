@@ -8,24 +8,12 @@ type State<T> =
   | { status: "error"; error: string }
   | { status: "ok"; data: T };
 
-type Action<T> =
-  | { type: "loading" }
-  | { type: "error"; error: string }
-  | { type: "ok"; data: T };
-
-function reducer<T>(_state: State<T>, action: Action<T>): State<T> {
-  switch (action.type) {
-    case "loading":
-      return { status: "loading" };
-    case "error":
-      return { status: "error", error: action.error };
-    case "ok":
-      return { status: "ok", data: action.data };
-  }
-}
-
 /**
  * Fetch JSON from the AgentPay backend and react to path changes.
+ *
+ * Pass `null` to skip fetching while keeping the current state. Responses from
+ * stale paths are ignored after unmount or path changes, so consumers do not
+ * need to add their own "is mounted" guard around this hook.
  *
  * @example
  * const state = useApi<{ items: AppEvent[] }>("/api/v1/events?limit=100");

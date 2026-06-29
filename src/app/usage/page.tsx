@@ -1,10 +1,12 @@
 "use client";
 
 import { Spinner } from "@/components/Spinner";
+import { TextField } from "@/components/TextField";
 import type { ApiError } from "@/lib/apiClient";
 import { apiGet, apiPost } from "@/lib/apiClient";
 import type { FormEvent } from "react";
 import { useState } from "react";
+import { parsePositiveInt } from "@/lib/validateNumber";
 
 type QueryResult = {
   agent: string;
@@ -48,6 +50,7 @@ export default function UsagePage() {
   const [agent, setAgent] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [requests, setRequests] = useState("");
+  const [requestsError, setRequestsError] = useState<string | null>(null);
   const [status, setStatus] = useState<UsageStatus>({ kind: "idle" });
   const [queryAgent, setQueryAgent] = useState("");
   const [queryService, setQueryService] = useState("");
@@ -58,9 +61,11 @@ export default function UsagePage() {
   const onRecord = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isRecording) return;
-    const requestsNum = Number(requests);
-    if (!Number.isInteger(requestsNum) || requestsNum <= 0) {
-      setStatus({ kind: "error", message: "requests must be a positive integer" });
+    setRequestsError(null);
+    const parsed = parsePositiveInt(requests);
+    if (!parsed.ok) {
+      // Surface the validation message through the field error.
+      setRequestsError(parsed.message);
       return;
     }
 
@@ -69,7 +74,7 @@ export default function UsagePage() {
       const body = await apiPost<{ total: number }>("/api/v1/usage", {
         agent,
         serviceId,
-        requests: requestsNum,
+        requests: parsed.value,
       });
       setStatus({ kind: "ok", total: body?.total });
     } catch (error) {
@@ -134,18 +139,21 @@ export default function UsagePage() {
               className="rounded-md border border-zinc-300 px-3 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-zinc-700 dark:bg-zinc-900"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span>Requests</span>
-            <input
-              required
-              type="number"
-              min="1"
-              name="requests"
-              value={requests}
-              onChange={(e) => setRequests(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-zinc-700 dark:bg-zinc-900"
-            />
-          </label>
+          <TextField
+            label="Requests"
+            inputMode="numeric"
+            required
+            value={requests}
+            onChange={(e) => {
+              setRequests(e.target.value);
+              setRequestsError(null);
+              if (status.kind === "error") {
+                setStatus({ kind: "idle" });
+              }
+            }}
+            error={requestsError ?? undefined}
+          />
+
           <button
             type="submit"
             disabled={isRecording}

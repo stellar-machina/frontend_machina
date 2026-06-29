@@ -20,17 +20,34 @@ describe("StatusDot", () => {
   });
 
   describe("variant colour dot", () => {
-    it("applies the per-variant background colour to the decorative dot", () => {
+    it("ok dot has the emerald colour class", () => {
+      const { container } = render(<StatusDot variant="ok" />);
+      const dot = container.querySelector('[aria-hidden="true"]');
+      expect(dot?.className).toMatch(/bg-emerald-500/);
+    });
+
+    it("warn dot has the amber colour class", () => {
       const { container } = render(<StatusDot variant="warn" />);
       const dot = container.querySelector('[aria-hidden="true"]');
-      expect(dot).toBeInTheDocument();
       expect(dot?.className).toMatch(/bg-amber-500/);
+    });
+
+    it("down dot has the rose colour class", () => {
+      const { container } = render(<StatusDot variant="down" />);
+      const dot = container.querySelector('[aria-hidden="true"]');
+      expect(dot?.className).toMatch(/bg-rose-500/);
     });
 
     it("marks the colour dot as aria-hidden so colour is not the only cue", () => {
       const { container } = render(<StatusDot variant="ok" />);
       const dot = container.querySelector(".rounded-full");
       expect(dot).toHaveAttribute("aria-hidden", "true");
+    });
+
+    it("does not mark the visible label as aria-hidden", () => {
+      render(<StatusDot variant="ok" />);
+      const label = screen.getByText("Operational");
+      expect(label).not.toHaveAttribute("aria-hidden");
     });
   });
 
@@ -42,9 +59,7 @@ describe("StatusDot", () => {
     });
 
     it("accepts a ReactNode label", () => {
-      render(
-        <StatusDot variant="ok" label={<strong>Live now</strong>} />,
-      );
+      render(<StatusDot variant="ok" label={<strong>Live now</strong>} />);
       const node = screen.getByText("Live now");
       expect(node.tagName).toBe("STRONG");
       expect(screen.queryByText("Operational")).not.toBeInTheDocument();
@@ -73,8 +88,7 @@ describe("StatusDot", () => {
 
   it("always renders a visible text label for screen readers", () => {
     const { container } = render(<StatusDot variant="ok" label="" />);
-    // Two spans carry text? No — the dot is aria-hidden; the label span must
-    // hold non-empty, non-hidden text.
+    // The dot is aria-hidden; the label span must hold non-empty, non-hidden text.
     const labelSpan = Array.from(container.querySelectorAll("span")).find(
       (s) => !s.hasAttribute("aria-hidden") && s.textContent,
     );

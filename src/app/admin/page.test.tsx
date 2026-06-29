@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AdminPage from "./page";
 import { ToastProvider } from "@/components/ToastProvider";
 
@@ -145,7 +145,9 @@ describe("AdminPage pause/unpause", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Working…$/i }));
     fireEvent.click(screen.getByRole("button", { name: /^Working…$/i }));
 
-    pauseResolve(undefined);
+    await act(async () => {
+      pauseResolve(undefined);
+    });
 
     await screen.findByText(/Paused/i);
 

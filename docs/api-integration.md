@@ -139,10 +139,15 @@ type Webhook = { id: string; url: string; events: string[]; createdAt: number };
 
 | Method & path | Type | Request body | Response shape | Source |
 | --- | --- | --- | --- | --- |
-| `GET /api/v1/events?limit={limit}` | Read | — | `{ items: AppEvent[] }` | `events/page.tsx` |
+| `GET /api/v1/events?limit={limit}` | Read | — | `{ items: AppEvent[] } \| { events: AppEvent[] }` | `events/page.tsx` |
 
 ```ts
-type AppEvent = { id: string; ts: number; type: string; payload: Record<string, unknown> };
+type AppEvent = {
+  id: string;
+  ts: number | string | null;
+  type: string;
+  payload: Record<string, unknown>;
+};
 ```
 
 ## Changelog

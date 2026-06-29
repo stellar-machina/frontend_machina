@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from "react";
 
+/**
+ * Persist client state to `window.localStorage` under `key`.
+ *
+ * The `initial` value is used for the first render and as the fallback when the
+ * key is missing, unreadable, or contains invalid JSON. localStorage is read
+ * only after mount, which keeps server rendering safe. Writes update React
+ * state first and then best-effort persist; quota/storage errors are ignored.
+ */
 export function useLocalState<T>(
   key: string,
   initial: T,

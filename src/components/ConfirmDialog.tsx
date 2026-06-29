@@ -14,6 +14,11 @@ type Props = {
   description?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
+  /**
+   * When true, clicking the backdrop (outside the dialog panel) calls `onCancel`.
+   * Escape and the Cancel button always dismiss the dialog.
+   */
+  dismissOnBackdrop?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -36,6 +41,14 @@ function getFocusableElements(container: HTMLElement) {
 /**
  * Keyboard-accessible confirmation modal with focus trap, Escape-to-cancel,
  * focus restoration, and scroll locking for WCAG 2.1 dialog behavior.
+ *
+ * ### Unique-id contract
+ * Each mounted instance derives its own `titleId` (and `descriptionId`) from
+ * React's `useId()` hook.  Both the dialog's `aria-labelledby` attribute and
+ * the `<h2 id>` reference the **same** per-instance id, so two dialogs
+ * rendered simultaneously never share an id and the accessible name is always
+ * unambiguous.  Callers do not need to supply any id — the `Props` type is
+ * intentionally free of id-related props.
  */
 export function ConfirmDialog({
   open,
@@ -43,10 +56,13 @@ export function ConfirmDialog({
   description,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
+  dismissOnBackdrop = false,
   onConfirm,
   onCancel,
 }: Props) {
-  const descriptionId = useId();
+  const baseId = useId();
+  const titleId = `${baseId}-title`;
+  const descriptionId = `${baseId}-description`;
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -122,20 +138,32 @@ export function ConfirmDialog({
     }
   };
 
+  const handleBackdropMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!dismissOnBackdrop) return;
+
+    // Only dismiss when the user clicked directly on the backdrop, not on the dialog panel.
+    if (event.target !== event.currentTarget) return;
+
+    onCancel();
+  };
+
   if (!open) return null;
   return (
     <div
-      ref={dialogRef}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-title"
-      aria-describedby={description ? descriptionId : undefined}
-      tabIndex={-1}
-      onKeyDown={handleKeyDown}
+      onMouseDown={handleBackdropMouseDown}
       className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
     >
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-zinc-900">
-        <h2 id="confirm-title" className="text-lg font-semibold">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={description ? descriptionId : undefined}
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
+        className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-zinc-900 focus:outline-none"
+      >
+        <h2 id={titleId} className="text-lg font-semibold">
           {title}
         </h2>
         {description && (

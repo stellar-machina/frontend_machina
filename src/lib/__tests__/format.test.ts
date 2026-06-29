@@ -12,7 +12,13 @@ describe("format", () => {
   it("formatStroops scales to XLM", () => {
     expect(formatStroops(0)).toBe("0 XLM");
     expect(formatStroops(10_000_000)).toBe("1.00 XLM");
-    expect(formatStroops(1_000)).toBe("1000 stroops");
+    expect(formatStroops(1_000)).toBe("1,000 stroops");
+  });
+  it("formatStroops groups large XLM values and preserves sub-cent precision", () => {
+    expect(formatStroops(12_345_678_900)).toBe("1,234.56789 XLM");
+    expect(formatStroops(1)).toBe("1 stroop");
+    expect(formatStroops(999)).toBe("999 stroops");
+    expect(formatStroops(1_000)).toBe("1,000 stroops");
   });
   it("formatRequests adds separators", () => {
     expect(formatRequests(1234567)).toBe("1,234,567");

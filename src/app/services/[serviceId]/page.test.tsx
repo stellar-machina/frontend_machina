@@ -191,7 +191,7 @@ describe("ServiceDetailPage", () => {
     renderPage("svc-subcent");
 
     expect(
-      await screen.findByText("50000 stroops (50000 stroops)"),
+      await screen.findByText("50,000 stroops (50000 stroops)"),
     ).toBeInTheDocument();
   });
 

@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPost, apiDelete } from "@/lib/apiClient";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { safeHref } from "@/lib/url";
+import { EmptyState } from "@/components/EmptyState";
+import { Spinner } from "@/components/Spinner";
+
 
 type Webhook = { id: string; url: string; events: string[]; createdAt: number };
 
@@ -97,24 +101,50 @@ export default function WebhooksPage() {
           </p>
         )}
       </form>
-      {items && (
-        <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
-          {items.map((w) => (
-            <li key={w.id} className="flex items-center justify-between gap-2 py-3">
-              <div>
-                <p className="text-sm font-medium break-all">{w.url}</p>
-                <p className="text-xs text-zinc-500">{w.events.join(", ")}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPendingRemove(w)}
-                className="rounded border border-zinc-300 px-3 py-1 text-xs hover:border-rose-500 hover:text-rose-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-zinc-700"
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
+      {items === null && !error && (
+        <div className="flex justify-center py-10">
+          <Spinner label="Loading webhooks" />
+        </div>
+      )}
+      {items?.length === 0 && (
+        <EmptyState
+          title="No webhooks registered yet"
+          description="Register a webhook URL to start receiving real-time event notifications."
+        />
+      )}
+      {items && items.length > 0 && (
+        <section aria-label="Registered webhooks">
+          <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            {items.map((w) => (
+              <li key={w.id} className="flex items-center justify-between gap-2 py-3">
+                <div>
+                  <p className="text-sm font-medium break-all">
+                    {(() => {
+                      const validated = safeHref(w.url);
+                      if (validated.ok) {
+                        return (
+                          <a href={validated.href} target="_blank" rel="noopener noreferrer">
+                            {w.url}
+                          </a>
+                        );
+                      }
+                      return w.url;
+                    })()}
+
+                  </p>
+                  <p className="text-xs text-zinc-500">{w.events.join(", ")}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPendingRemove(w)}
+                  className="rounded border border-zinc-300 px-3 py-1 text-xs hover:border-rose-500 hover:text-rose-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-zinc-700"
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </main>
   );

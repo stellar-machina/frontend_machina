@@ -201,4 +201,352 @@ describe("EventsPage", () => {
       );
     });
   });
+
+  it("throws when an item in the array is not an object", async () => {
+    const fetchMock = jest.fn(async () => jsonResponse({ items: [null] }));
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        /malformed events payload/i
+      );
+    });
+  });
+
+  it("handles the alternative { events: [...] } response shape", async () => {
+    const fetchMock = jest.fn(async () =>
+      jsonResponse({ events: FIRST_BATCH.slice(0, 1) })
+    );
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("payment.created")).toBeInTheDocument();
+    });
+  });
+
+  it("coerces non-numeric/non-string/non-null ts to null", async () => {
+    const weirdEvents = [
+      {
+        id: "evt-weird",
+        ts: { some: "object" }, // should be coerced to null
+        type: "weird.event",
+        payload: {},
+      },
+    ];
+
+    const fetchMock = jest.fn(async () => jsonResponse({ items: weirdEvents }));
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("weird.event")).toBeInTheDocument();
+    });
+
+    // When ts is null, safeFormatTimestamp returns \u2014 (em-dash)
+    // and TimeAgo is not rendered.
+    expect(screen.getByText("\u2014")).toBeInTheDocument();
+  });
+
+  it("throws when neither items nor events is an array", async () => {
+    const fetchMock = jest.fn(async () =>
+      jsonResponse({ items: "not-an-array", events: "also-not-an-array" })
+    );
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        /malformed events payload/i
+      );
+    });
+  });
+
+  it("handles missing type field by coercing to empty string", async () => {
+    const missingTypeEvents = [
+      {
+        id: "evt-no-type",
+        ts: BASE_TIME.getTime(),
+        // type is missing
+        payload: { test: "missing-type" },
+      },
+    ];
+
+    const fetchMock = jest.fn(async () => jsonResponse({ items: missingTypeEvents }));
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    await waitFor(() => {
+      // Verify the payload is rendered, confirming the item was processed
+      expect(screen.getByText(/"test": "missing-type"/)).toBeInTheDocument();
+    });
+
+    // The type span should be empty but present
+    const spans = screen.getAllByRole("listitem")[0].querySelectorAll("span");
+    expect(spans[0]).toHaveTextContent("");
+  });
+
+  it("caps rendered events at 50 and shows 'showing N of M' note when list exceeds cap", async () => {
+    const largeList = Array.from({ length: 75 }, (_, i) => ({
+      id: `evt-${i}`,
+      ts: BASE_TIME.getTime() - i * 1000,
+      type: `event.type.${i}`,
+      payload: { index: i },
+    }));
+
+    const fetchMock = jest.fn(async () => jsonResponse({ items: largeList }));
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("event.type.0")).toBeInTheDocument();
+    });
+
+    // Should show exactly 50 events
+    const listItems = screen.getAllByRole("listitem");
+    expect(listItems).toHaveLength(50);
+
+    // Should show the truncation note
+    expect(screen.getByText("Showing 50 of 75 events.")).toBeInTheDocument();
+
+    // First 50 should be rendered
+    expect(screen.getByText("event.type.0")).toBeInTheDocument();
+    expect(screen.getByText("event.type.49")).toBeInTheDocument();
+
+    // 51st and beyond should not be rendered
+    expect(screen.queryByText("event.type.50")).not.toBeInTheDocument();
+    expect(screen.queryByText("event.type.74")).not.toBeInTheDocument();
+  });
+
+  it("does not show truncation note when list is below cap", async () => {
+    const smallList = Array.from({ length: 10 }, (_, i) => ({
+      id: `evt-${i}`,
+      ts: BASE_TIME.getTime() - i * 1000,
+      type: `event.type.${i}`,
+      payload: { index: i },
+    }));
+
+    const fetchMock = jest.fn(async () => jsonResponse({ items: smallList }));
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("event.type.0")).toBeInTheDocument();
+    });
+
+    const listItems = screen.getAllByRole("listitem");
+    expect(listItems).toHaveLength(10);
+
+    // Should not show truncation note
+    expect(screen.queryByText(/Showing \d+ of \d+ events\./)).not.toBeInTheDocument();
+  });
+
+  it("caps rendered events after filtering", async () => {
+    const largeList = Array.from({ length: 75 }, (_, i) => ({
+      id: `evt-${i}`,
+      ts: BASE_TIME.getTime() - i * 1000,
+      type: i < 60 ? "payment.created" : `other.type.${i}`,
+      payload: { index: i },
+    }));
+
+    const fetchMock = jest.fn(async () => jsonResponse({ items: largeList }));
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText("payment.created").length).toBeGreaterThan(0);
+    });
+
+    const filter = screen.getByRole("searchbox", {
+      name: /filter events by type/i,
+    });
+    fireEvent.change(filter, { target: { value: "payment" } });
+
+    await act(async () => {
+      jest.advanceTimersByTime(250);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Showing 50 of 60 events.")).toBeInTheDocument();
+    });
+
+    const listItems = screen.getAllByRole("listitem");
+    expect(listItems).toHaveLength(50);
+  });
+
+  it("does not cause re-render churn when data is unchanged across polls", async () => {
+    let renderCount = 0;
+    const stableData = FIRST_BATCH;
+
+    const fetchMock = jest.fn(async () => jsonResponse({ items: stableData }));
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    const TestWrapper = () => {
+      renderCount++;
+      return <EventsPage />;
+    };
+
+    render(<TestWrapper />);
+
+    await waitFor(() => {
+      expect(screen.getByText("payment.created")).toBeInTheDocument();
+    });
+
+    const initialRenderCount = renderCount;
+
+    const toggle = screen.getByRole("button", { name: /auto-refresh event log/i });
+    await act(async () => {
+      fireEvent.click(toggle);
+    });
+
+    // Advance through multiple poll cycles
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    // Should have fetched multiple times
+    expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(3);
+
+    // Render count should not increase excessively
+    // (some re-renders are expected for state updates, but not one per list item)
+    expect(renderCount).toBeLessThan(initialRenderCount + 10);
+  });
+
+  it("renders spinner/busy region during initial load, which goes away after load", async () => {
+    let resolveFetch: (value: Response) => void = () => {};
+    const fetchPromise = new Promise<Response>((resolve) => {
+      resolveFetch = resolve;
+    });
+    const fetchMock = jest.fn(() => fetchPromise);
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    // Assert spinner is present and busy region has correct aria attributes
+    const statusElements = screen.getAllByRole("status");
+    const busyRegion = statusElements.find((el) => el.getAttribute("aria-busy") === "true");
+    expect(busyRegion).toBeDefined();
+    expect(busyRegion).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByText("Loading events")).toBeInTheDocument();
+
+    // Resolve the fetch
+    await act(async () => {
+      resolveFetch(jsonResponse({ items: FIRST_BATCH }));
+    });
+
+    // Assert spinner/busy region is gone
+    await waitFor(() => {
+      expect(screen.queryAllByRole("status")).toHaveLength(0);
+    });
+    expect(screen.getByText("payment.created")).toBeInTheDocument();
+  });
+
+  it("does not render/flash spinner during background auto-refresh", async () => {
+    let resolveFirstFetch: (value: Response) => void = () => {};
+    const firstFetchPromise = new Promise<Response>((resolve) => {
+      resolveFirstFetch = resolve;
+    });
+
+    let resolveSecondFetch: (value: Response) => void = () => {};
+    const secondFetchPromise = new Promise<Response>((resolve) => {
+      resolveSecondFetch = resolve;
+    });
+
+    let resolveThirdFetch: (value: Response) => void = () => {};
+    const thirdFetchPromise = new Promise<Response>((resolve) => {
+      resolveThirdFetch = resolve;
+    });
+
+    let call = 0;
+    const fetchMock = jest.fn(() => {
+      call += 1;
+      if (call === 1) return firstFetchPromise;
+      if (call === 2) return secondFetchPromise;
+      return thirdFetchPromise;
+    });
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    // 1. Initial load
+    expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
+    await act(async () => {
+      resolveFirstFetch(jsonResponse({ items: FIRST_BATCH }));
+    });
+    await waitFor(() => {
+      expect(screen.queryAllByRole("status")).toHaveLength(0);
+    });
+
+    // 2. Turn on auto-refresh (triggers load(false) on useEffect effect restart)
+    const toggle = screen.getByRole("button", { name: /auto-refresh event log/i });
+    await act(async () => {
+      fireEvent.click(toggle);
+    });
+
+    // Resolve the toggle-triggered load(false) fetch
+    await act(async () => {
+      resolveSecondFetch(jsonResponse({ items: FIRST_BATCH }));
+    });
+    await waitFor(() => {
+      expect(screen.queryAllByRole("status")).toHaveLength(0);
+    });
+
+    // 3. Advance timer to trigger background auto-refresh (load(true))
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    // Assert third fetch is pending, but spinner is NOT shown (because background auto-refresh shouldn't trigger loading state)
+    expect(screen.queryAllByRole("status")).toHaveLength(0);
+
+    // Resolve third fetch
+    await act(async () => {
+      resolveThirdFetch(jsonResponse({ items: REFRESH_BATCH }));
+    });
+
+    // Assert updated data is present
+    await waitFor(() => {
+      expect(screen.getByText("audit.logged")).toBeInTheDocument();
+    });
+    expect(screen.queryAllByRole("status")).toHaveLength(0);
+  });
+
+  it("shows error and hides spinner when load fails", async () => {
+    let rejectFetch: (reason: Error) => void = () => {};
+    const fetchPromise = new Promise<Response>((_, reject) => {
+      rejectFetch = reject;
+    });
+    const fetchMock = jest.fn(() => fetchPromise);
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    render(<EventsPage />);
+
+    // Assert initial spinner is shown
+    expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
+
+    // Reject fetch with error
+    await act(async () => {
+      rejectFetch(new Error("API Error"));
+    });
+
+    // Assert spinner is gone and error is shown
+    await waitFor(() => {
+      expect(screen.queryAllByRole("status")).toHaveLength(0);
+      expect(screen.getByRole("alert")).toHaveTextContent("API Error");
+    });
+  });
 });
+

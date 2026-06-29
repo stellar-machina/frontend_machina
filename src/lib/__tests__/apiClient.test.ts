@@ -1,3 +1,11 @@
+jest.mock("../resolveApiBase", () => ({
+  resolveApiBase: jest.fn(() => {
+    const raw = process.env.NEXT_PUBLIC_AGENTPAY_API_BASE?.trim();
+    const base = raw && raw.length > 0 ? raw : "http://localhost:3001";
+    return base.replace(/\/+$/, "");
+  }),
+}));
+
 import {
   type ApiError,
   ApiTimeoutError,
@@ -360,8 +368,7 @@ describe("apiClient", () => {
   it("aborts the request when timeoutMs elapses", async () => {
     jest.useFakeTimers();
 
-    mockFetch(
-      jest.fn(
+    globalThis.fetch = jest.fn(
         (_url, init) =>
           new Promise<Response>((_resolve, reject) => {
             const signal = init?.signal;
@@ -369,7 +376,6 @@ describe("apiClient", () => {
               once: true,
             });
           }),
-      ),
     );
 
     const pending = apiFetch("/api/v1/slow", { timeoutMs: 50 });
@@ -607,7 +613,7 @@ describe("apiClient", () => {
   });
 
   it("throws a generic ApiError when an error response is not JSON", async () => {
-    mockFetch(jest.fn(async () => new Response("Bad gateway", { status: 502 })));
+    globalThis.fetch = jest.fn(async () => new Response("Bad gateway", { status: 502 })) as unknown as typeof globalThis.fetch;
 
     await expect(apiGet("/api/v1/x")).rejects.toMatchObject({
       message: "Request failed",
@@ -618,8 +624,7 @@ describe("apiClient", () => {
   it("aborts the request when timeoutMs elapses", async () => {
     jest.useFakeTimers();
 
-    mockFetch(
-      jest.fn(
+    globalThis.fetch = jest.fn(
         (_url, init) =>
           new Promise<Response>((_resolve, reject) => {
             const signal = init?.signal;
@@ -629,8 +634,7 @@ describe("apiClient", () => {
               { once: true }
             );
           })
-      )
-    );
+      ) as unknown as typeof globalThis.fetch;
 
     const pending = apiFetch("/api/v1/slow", { timeoutMs: 50 });
     const assertion = pending.catch((error) => {
@@ -648,8 +652,7 @@ describe("apiClient", () => {
   it("uses the default timeout when timeoutMs is omitted", async () => {
     jest.useFakeTimers();
 
-    mockFetch(
-      jest.fn(
+    globalThis.fetch = jest.fn(
         (_url, init) =>
           new Promise<Response>((_resolve, reject) => {
             const signal = init?.signal;
@@ -659,8 +662,7 @@ describe("apiClient", () => {
               { once: true }
             );
           })
-      )
-    );
+      ) as unknown as typeof globalThis.fetch;
 
     const pending = apiFetch("/api/v1/slow");
     const assertion = pending.catch((error) => {
@@ -678,8 +680,7 @@ describe("apiClient", () => {
   it("propagates caller aborts through the composed signal", async () => {
     const callerController = new AbortController();
 
-    mockFetch(
-      jest.fn(
+    globalThis.fetch = jest.fn(
         (_url, init) =>
           new Promise<Response>((_resolve, reject) => {
             const signal = init?.signal;
@@ -689,8 +690,7 @@ describe("apiClient", () => {
               { once: true }
             );
           })
-      )
-    );
+      ) as unknown as typeof globalThis.fetch;
 
     const pending = apiFetch("/api/v1/slow", {
       signal: callerController.signal,
@@ -726,12 +726,10 @@ describe("apiClient", () => {
     jest.useFakeTimers();
 
     let fetchSignal: AbortSignal | undefined;
-    mockFetch(
-      jest.fn(async (_url, init) => {
+    globalThis.fetch = jest.fn(async (_url, init) => {
         fetchSignal = init?.signal as AbortSignal;
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
-      })
-    );
+      }) as unknown as typeof globalThis.fetch;
 
     await expect(
       apiFetch<{ ok: boolean }>("/api/v1/things", { timeoutMs: 0 })
@@ -746,12 +744,10 @@ describe("apiClient", () => {
     jest.useFakeTimers();
 
     let fetchSignal: AbortSignal | undefined;
-    mockFetch(
-      jest.fn(async (_url, init) => {
+    globalThis.fetch = jest.fn(async (_url, init) => {
         fetchSignal = init?.signal as AbortSignal;
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
-      })
-    );
+      }) as unknown as typeof globalThis.fetch;
 
     await expect(
       apiFetch<{ ok: boolean }>("/api/v1/things", { timeoutMs: 100 })

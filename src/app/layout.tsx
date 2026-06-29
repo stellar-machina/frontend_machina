@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
@@ -16,6 +16,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+};
+
 export const metadata: Metadata = {
   title: {
     default: "AgentPay",
@@ -24,6 +31,10 @@ export const metadata: Metadata = {
   description: "Machine-to-machine payment protocol on Stellar",
   applicationName: "AgentPay",
   authors: [{ name: "AgentPay" }],
+  manifest: "/manifest.webmanifest",
+  icons: {
+    apple: "/favicon.ico",
+  },
   openGraph: {
     title: "AgentPay",
     description: "Pay-per-request billing for AI agents and APIs on Stellar.",

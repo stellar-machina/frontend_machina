@@ -1,14 +1,33 @@
-/** Format a stroops amount as a human XLM number (1 XLM = 1e7 stroops). */
+const STROOPS_PER_XLM = 10_000_000;
+const DEFAULT_LOCALE = "en-US";
+
+const xlmFormatter = new Intl.NumberFormat(DEFAULT_LOCALE, {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 7,
+});
+
+const integerFormatter = new Intl.NumberFormat(DEFAULT_LOCALE, {
+  maximumFractionDigits: 0,
+});
+
+/**
+ * Format a stroops amount using Stellar's 1 XLM = 10,000,000 stroops ratio.
+ * Zero remains `0 XLM`; non-zero sub-cent values stay in grouped raw stroops
+ * so tiny balances are not hidden as `0.00 XLM`.
+ */
 export function formatStroops(stroops: number): string {
-  const xlm = stroops / 1e7;
+  const xlm = stroops / STROOPS_PER_XLM;
   if (xlm === 0) return "0 XLM";
-  if (xlm < 0.01) return `${stroops} stroops`;
-  return `${xlm.toFixed(2)} XLM`;
+  if (xlm < 0.01) {
+    const unit = Math.abs(stroops) === 1 ? "stroop" : "stroops";
+    return `${integerFormatter.format(stroops)} ${unit}`;
+  }
+  return `${xlmFormatter.format(xlm)} XLM`;
 }
 
 /** Format a numeric request count with thousands separators. */
 export function formatRequests(n: number): string {
-  return n.toLocaleString("en-US");
+  return integerFormatter.format(n);
 }
 
 /** Format an absolute timestamp into a short HH:MM:SS string. */

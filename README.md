@@ -48,6 +48,7 @@ agentpay-frontend/
 │   │   ├── layout.tsx
 │   │   ├── loading.tsx
 │   │   ├── error.tsx
+│   │   ├── global-error.tsx                        # root-layout crash boundary
 │   │   ├── not-found.tsx
 │   │   ├── favicon.ico
 │   │   ├── globals.css
@@ -89,6 +90,10 @@ agentpay-frontend/
     └── ci.yml                                    # CI: build, test
 ```
 
+## Route architecture
+
+For a detailed breakdown of each route's responsibility, render mode (server vs client), nested layout, and backend endpoints, see [docs/architecture.md](docs/architecture.md).
+
 ## Route map (frontend)
 
 Backend endpoints are taken from the companion documentation page `src/app/docs/page.tsx` and from the API client usage throughout `src/app/*`.
@@ -102,7 +107,7 @@ Backend endpoints are taken from the companion documentation page `src/app/docs/
 | `/agents/:agent`              | Single-agent view                            | _(reads agent details via `/api/v1/agents/:agent` in code)_                                                                                       |
 | `/api-keys`                   | API keys management                          | _(list/create/delete/update endpoints in code)_                                                                                                   |
 | `/changelog`                  | Changelog                                    | _(static or calls `/api/v1/changelog` depending on implementation)_                                                                               |
-| `/docs`                       | Short API endpoint reference                 | `GET /api/v1/openapi.json` plus the prose list rendered from `sections` in `src/app/docs/page.tsx` (usage, settle, services, admin pause/unpause) |
+| `/docs` | Short API endpoint reference | `GET /api/v1/openapi.json` plus the prose list rendered from `src/app/docs/page.tsx` (usage, settle, services, admin pause/unpause). Each endpoint includes a copyable curl example. |
 | `/events`                     | Event log renderer                           | _(reads events stream/poll via `/api/v1/events` endpoints in code)_                                                                               |
 | `/export`                     | Export data                                  | _(calls export endpoints in code)_                                                                                                                |
 | `/search`                     | Global search                                | _(calls search endpoint in code)_                                                                                                                 |
@@ -122,7 +127,66 @@ See [docs/components.md](docs/components.md) for the shared component catalog,
 including prop tables, usage examples, and accessibility notes for the
 primitives in `src/components`.
 
+## Shared hooks
+
+See [docs/hooks.md](docs/hooks.md) for the shared hook reference, including
+signatures, return shapes, cancellation and SSR notes, and usage examples for
+the hooks in `src/lib`.
+
+## Error boundaries
+
+### Route-level boundary (`src/app/error.tsx`)
+
+Catches exceptions thrown inside individual route segments. Renders inside the
+root layout so the Header, Footer, and ToastProvider remain visible.
+
+Key features:
+
+- **Accessible error presentation:** Error message wrapped in `role="alert"` so
+  screen readers announce it immediately.
+- **Recovery action:** "Try again" button (using the shared `Button` component)
+  wired to Next.js's `reset()` callback allows users to retry without a full page
+  reload — essential for transient failures like flaky fetches.
+- **Production safety:** Only `error.message` is rendered; stack traces never
+  leak into the DOM.
+- **Debug support:** `error.digest` (if present) is logged to the console for
+  debugging but not prominently displayed to users.
+- **Keyboard accessible:** Button includes `focus-visible` outline and is fully
+  operable via keyboard.
+- **Dark mode compatible:** All styling supports both light and dark themes.
+
+Behaviour is covered by `src/app/error.test.tsx`, which asserts the alert region
+renders, the reset callback is invoked on click, no stack traces appear, and edge
+cases like empty messages are handled gracefully.
+
+### Global boundary (`src/app/global-error.tsx`)
+
+Catches exceptions thrown **in the root layout itself** — for example a crash
+in `Header`, `Footer`, or `ToastProvider` in `src/app/layout.tsx`. Because the
+layout chrome is unavailable at that point, `global-error.tsx` renders its own
+`<html>`/`<body>` shell as required by the Next.js contract.
+
+Key design decisions:
+
+- **`role="alert"` + `aria-live="assertive"`** on the `<main>` element so
+  screen readers announce the error immediately.
+- **No stack traces in the DOM.** Only `error.message` (user-facing) and
+  `error.digest` (server-generated support-correlation ID) are rendered.
+- **Minimal inline styles** (no Tailwind, no font imports) so the page renders
+  correctly even when the CSS pipeline that powers the normal layout is
+  unavailable.
+- Behaviour is covered by `src/app/global-error.test.tsx`, which asserts the
+  message renders, `reset` is called on click, no stack trace appears, and the
+  component renders standalone without Header/Footer.
+
+## Responsive header navigation
+
+On small screens (below Tailwind `md`), the Header collapses into an accessible disclosure menu with a keyboard-operable toggle (Escape closes; focus returns to the toggle). The inline primary navigation remains for `md` and larger screens.
+
+Additionally, the Header marks exactly one active route strictly utilizing `aria-current="page"` (leveraging the client-side `usePathname()` context), creating a robust "you are here" cue for assistive technologies.
+
 ## Accessibility
+
 
 ### Route loading skeleton
 
@@ -137,6 +201,23 @@ pulse animation is disabled for users who request reduced motion via the
 `prefers-reduced-motion` rules in [`src/app/globals.css`](src/app/globals.css). This
 satisfies [WCAG 4.1.3 Status Messages](https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html).
 Behaviour is covered by [`src/app/loading.test.tsx`](src/app/loading.test.tsx).
+
+### Search result announcements
+
+The search page ([`src/app/search/page.tsx`](src/app/search/page.tsx)) includes a
+visually-hidden `aria-live="polite"` region that announces the number of search results
+to screen readers after the debounced query settles. This ensures assistive-technology
+users receive feedback about result counts without focus being stolen from the search
+input. The announcement format is:
+- "N results for 'query'" for one or more matches
+- "No matches for 'query'" when the search returns zero results or fails
+- No announcement for empty queries
+
+The live region coordinates with the 250ms debounce timing to avoid spamming announcements
+on every keystroke. The region is marked with `aria-atomic="true"` and uses the `sr-only`
+class for visual hiding. This implementation satisfies
+[WCAG 4.1.3 Status Messages](https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html).
+Behaviour is covered by [`src/app/search/page.test.tsx`](src/app/search/page.test.tsx).
 
 ## API integration
 
@@ -163,7 +244,8 @@ control:
 - `src/app/robots.ts` allows public crawling from `/` and explicitly
   disallows operator-only dashboard surfaces: `/admin`, `/api-keys`,
   `/webhooks`, and `/settings`.
-- Both metadata routes derive absolute URLs from
+- `src/app/manifest.ts` serves the PWA web app manifest with name, description, branding colors matching the dark/light palette in `src/app/globals.css`, and `favicon.ico` icon entry to enable installability as a PWA.
+- Both `sitemap.ts` and `robots.ts` derive absolute URLs from
   `NEXT_PUBLIC_AGENTPAY_SITE_ORIGIN`, defaulting to `http://localhost:3000` for
   local development rather than hard-coding a production domain.
 
@@ -198,10 +280,20 @@ The following frontend routes are defined under `src/app/`:
 
 The home page (`src/app/page.tsx`) renders the primary navigation entry points (Manage services, View stats, Record usage, Agents, Docs) and the external Stellar link inside a `<nav aria-label="Quick links">` landmark with a semantic `<ul>` / `<li>` list structure. This improves discoverability for screen-reader users.
 
+## 404 page recovery links
+
+The 404 page (`src/app/not-found.tsx`) renders a `<nav aria-label="Helpful links">` landmark below the error message with quick-return links to four primary surfaces (Home, Services, Stats, Docs). This gives users a semantic, keyboard-accessible path back into the app without relying on the browser back button. The navigation uses a `<ul>` / `<li>` list structure and all links include `focus-visible` outlines for keyboard accessibility.
+
 ## Security headers
 
 A baseline security header set (CSP, `X-Frame-Options: DENY`, `Referrer-Policy`, `X-Content-Type-Options`, `Permissions-Policy`, HSTS) is wired up in `next.config.ts` via `src/lib/securityHeaders.ts`. The CSP `connect-src` directive tracks `NEXT_PUBLIC_AGENTPAY_API_BASE` automatically; `<a href>` links to external sites (`https://stellar.org`, etc.) remain navigable.
 
+## Link safety convention
+
+When rendering links:
+
+- Any external link rendered with `target="_blank"` must include `rel="noopener noreferrer"`.
+- Any `href` derived from backend/user data must be validated with `safeHref()` from `src/lib/url.ts`. Unsafe schemes like `javascript:` and `data:` are rejected.
 ## Route map (frontend)
 
 | Path | Notes |
@@ -229,16 +321,64 @@ A baseline security header set (CSP, `X-Frame-Options: DENY`, `Referrer-Policy`,
 
 ## Event log rendering
 
-The `/events` page renders server-supplied JSON payloads. Each payload is serialised through `safeStringify` (`src/lib/format.ts`) with a hard cap (`EVENT_PAYLOAD_MAX_CHARS`, default 5,000 chars) and a visible `…(truncated)` marker. Circular references, `BigInt`, functions, and malformed timestamps are replaced with safe sentinels so a bad payload can't crash the page.
+The `/events` page renders server-supplied JSON payloads with performance safeguards:
+
+- **Per-payload cap:** Each payload is serialised through `safeStringify` (`src/lib/format.ts`) with a hard cap (`EVENT_PAYLOAD_MAX_CHARS`, default 5,000 chars) and a visible `…(truncated)` marker. Circular references, `BigInt`, functions, and malformed timestamps are replaced with safe sentinels so a bad payload can't crash the page.
+- **Render count cap:** The list is capped at 50 rendered rows (`MAX_RENDERED_EVENTS`) to keep the DOM bounded, regardless of the backend `limit`. When the filtered list exceeds the cap, a "Showing 50 of N events." note appears above the list.
+- **Stable filtering:** The `useMemo` filter dependencies are minimal (`items`, `debouncedQuery`), so background polling does not trigger unnecessary re-renders when the underlying data is unchanged.
+
+## Changelog empty state
+
+The `/changelog` page keeps using `useApi("/api/v1/changelog")` for loading release notes. When the backend returns `{ entries: [] }`, it renders the shared `EmptyState` component with a clear "No changelog entries yet" message instead of an empty list. This branch is constant-time and adds no extra network calls.
+
+## Webhooks empty and loading states
+
+The `/webhooks` page shows the shared `Spinner` component during the initial fetch. Once the list resolves, if it is empty, it renders the `EmptyState` component with "No webhooks registered yet" and helpful guidance. When webhooks are present, they are rendered inside an accessible region for better screen-reader discovery.
 
 ## Formatting conventions
 
 The frontend formats currency (Stroops / XLM) consistently using the helper `formatStroops` (located in `src/lib/format.ts`):
 
 - **Stroops definition:** 1 XLM = 10,000,000 stroops (Stellar's base unit).
-- **Sub-cent amounts:** If the value converts to less than `0.01 XLM` (but is non-zero), the formatting shows the amount in raw `stroops` (e.g., `50000 stroops`).
-- **Standard amounts:** Standard amounts are formatted in `XLM` with two decimal places (e.g., `1.50 XLM`).
+- **Sub-cent amounts:** If the value converts to less than `0.01 XLM` (but is non-zero), the formatting shows the amount in grouped raw `stroops` (e.g., `50,000 stroops`).
+- **Standard amounts:** Standard amounts are formatted in grouped `XLM` with at least two and up to seven fraction digits so large values stay readable and fractional XLM is not hidden (e.g., `1.50 XLM`, `1,234.56789 XLM`).
 - **Zero amount:** A zero price formats to `0 XLM`.
+
+## Internationalization (groundwork)
+
+User-facing copy is being centralized into a single typed catalog so a future
+localization effort has one place to translate. This is **groundwork only** — no
+i18n library is wired up yet and no rendered copy changes.
+
+- **Single source of truth:** [`src/lib/messages.ts`](src/lib/messages.ts)
+  exports a typed, namespaced `messages` object (one namespace per surface),
+  mirroring the established pattern in
+  [`src/app/pageTitles.ts`](src/app/pageTitles.ts). It is `as const`, so keys and
+  literal values are fully typed and a typo on a key fails at compile time.
+- **Consuming it:** import `messages` and read the string instead of hard-coding
+  it inline:
+
+  ```tsx
+  import { messages } from "@/lib/messages";
+
+  export function Footer() {
+    return <footer>{messages.footer.text}</footer>;
+  }
+  ```
+
+- **Migrated so far:** [`src/components/Footer.tsx`](src/components/Footer.tsx),
+  the home page [`src/app/page.tsx`](src/app/page.tsx), the about page
+  [`src/app/about/page.tsx`](src/app/about/page.tsx), the docs page
+  [`src/app/docs/page.tsx`](src/app/docs/page.tsx), and the settings page
+  [`src/app/settings/page.tsx`](src/app/settings/page.tsx). Follow the same pattern when
+  touching other surfaces — add the string to a namespace in `messages.ts`, then
+  reference it from the component.
+- **Future i18n:** because the catalog is framework-agnostic, adopting
+  `next-intl` / `next-i18next` later can wrap the same namespaced shape (e.g. a
+  per-locale catalog keyed off `Messages`) without changing existing call sites.
+- **Tests:** [`src/lib/__tests__/messages.test.ts`](src/lib/__tests__/messages.test.ts)
+  asserts keys resolve, there are no duplicate key paths, unknown keys fail at
+  the type level, and the migrated surfaces still render the exact original copy.
 
 ## Document titles
 
@@ -265,10 +405,21 @@ The root layout keeps the home route on the default `AgentPay` title and applies
 
 The `/about` page now exposes direct links to the dashboard surfaces described in its copy: `/services`, `/usage`, `/docs`, `/events`, `/webhooks`, `/api-keys`, and `/admin`.
 
+## Form validation
+
+Forms in the application (such as the New Service form `/services/new`) follow these validation and accessibility standards:
+- **Shared Primitive Components:** Reusable input fields use the `TextField` component (`src/components/TextField.tsx`) and standard `Button` components.
+- **Per-Field Validation Errors:** Local validation errors (e.g. invalid inputs or formatting issues verified via `src/lib/validateNumber.ts`) are passed directly to the `TextField`'s `error` prop. This flips `aria-invalid` to `true` and attaches the message using `aria-describedby` dynamically.
+- **Page-Level Alerts:** Generic API errors and backend validation failures (e.g. `invalid_request`) are rendered at the page level inside a dedicated alert region with `role="alert"` so assistive technologies announce them immediately.
+
 ## Services list paging
 
 The `/services` page now uses server-driven pagination with the shared `Spinner`, `EmptyState`, and `Pagination` components.
 
+See also: `docs/theming.md` for the full theme system, anti-FOUC contract, and token architecture.
+
+
+To prevent a flash of the wrong colour scheme (FOUC) when a user has chosen dark mode, a tiny blocking inline `<script>` is injected into `<head>` in `src/app/layout.tsx` **before the body renders**:
 - Requests are sent as `GET /api/v1/services?page=N&limit=25`.
 - The page assumes the backend returns a paged payload with `services` or `items`, plus `page` and `pageCount`.
 - If the backend clamps an out-of-range request, the UI follows the server-provided `page` and `pageCount` so the visible indicator stays in sync.
@@ -283,17 +434,21 @@ The `/agents` page lists every agent identity seen by the backend, paginated wit
 - Each row is a `<Link>` to `/agents/:agent` with the identifier fully `encodeURIComponent`-encoded, so agents with slashes or other special characters route correctly.
 - `Pagination` hides itself automatically when `pageCount ≤ 1`, so no pagination bar appears for a single-page result.
 - Backend errors are surfaced as a `role="alert"` paragraph; the pagination bar is suppressed while an error is shown.
+- The single-agent view (`/agents/:agent`) utilizes a semantic `<Breadcrumb>` trail for accessible orientation.
 
 ## Commands
 
-| Command                 | Description                 |
-| ----------------------- | --------------------------- | ----------------------------------- |
-| `npm run build`         | Production build            |
-| `npm test`              | Run Jest tests              |
-| `npm run test:coverage` | Run Jest with coverage      | (not defined in this repo snapshot) |
-| `npm run dev`           | Development server          |
-| `npm run lint`          | Run ESLint                  |
-| `npm run typecheck`     | Run the TypeScript compiler |
+| Command                 | Description                                              |
+| ----------------------- | -------------------------------------------------------- |
+| `npm run build`         | Production build                                         |
+| `npm test`              | Run Jest tests (no coverage)                             |
+| `npm run test:coverage` | Run Jest with coverage — enforces all threshold gates    |
+| `npm run test:watch`    | Run Jest in interactive watch mode (local dev)           |
+| `npm run dev`           | Development server                                       |
+| `npm run lint`          | Run ESLint                                               |
+| `npm run typecheck`     | Run the TypeScript compiler                              |
+
+See [docs/testing.md](docs/testing.md) for the full coverage reference — per-file thresholds, report locations, and how to read the terminal output.
 
 ## CI/CD
 

@@ -37,6 +37,23 @@ Use `Header` once in the app shell. It already exposes the nav with
 <Footer />
 ```
 
+### `PageShell`
+
+| Prop | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `children` | `ReactNode` | yes | Inner content of the page layout wrapper. |
+| `maxWidth` | `"xl" \| "2xl" \| "3xl" \| "4xl" \| "5xl" \| "6xl" \| "7xl" \| string` | no | Suffix of the max-width Tailwind class (e.g. `"3xl"` sets `"max-w-3xl"`). Defaults to `"3xl"`. |
+| `gap` | `"4" \| "6" \| "8" \| "12" \| string` | no | Suffix of the gap Tailwind class (e.g. `"6"` sets `"gap-6"`). Defaults to `"6"`. |
+| `className` | `string` | no | Additional style classes to append. |
+
+PageShell wraps pages inside the `<main id="main-content">` accessible landmark, providing consistent focus indicators for accessibility skip-links, min-height formatting, and horizontal auto-centering.
+
+```tsx
+<PageShell maxWidth="2xl" gap="8">
+  <h1>Page Title</h1>
+</PageShell>
+```
+
 ### `PageHeading`
 
 | Prop | Type | Required | Notes |
