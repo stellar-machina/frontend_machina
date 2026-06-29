@@ -1,8 +1,7 @@
 import { PageShell } from "@/components/PageShell";
+import { CurlBlock } from "@/components/CurlBlock";
 import { messages } from "@/lib/messages";
 import { resolveApiBase } from "@/lib/resolveApiBase";
-import { CurlBlock } from "@/components/CurlBlock";
-import { safeHref } from "@/lib/url";
 
 export const metadata = { title: "Docs — AgentPay" };
 
