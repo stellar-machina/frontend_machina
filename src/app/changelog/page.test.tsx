@@ -18,8 +18,26 @@ describe("ChangelogPage", () => {
 
     render(<ChangelogPage />);
 
-    expect(mockApiGet).toHaveBeenCalledWith("/api/v1/changelog");
+    expect(mockApiGet).toHaveBeenCalledWith(
+      "/api/v1/changelog",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
     expect(screen.getByRole("status")).toHaveTextContent("Loading changelog");
+  });
+
+  it("aborts the shared changelog request on unmount", () => {
+    mockApiGet.mockReturnValue(new Promise(() => {}));
+
+    const { unmount } = render(<ChangelogPage />);
+    const init = mockApiGet.mock.calls[0]?.[1] as RequestInit | undefined;
+    const signal = init?.signal;
+
+    expect(signal).toEqual(expect.any(AbortSignal));
+    expect(signal?.aborted).toBe(false);
+
+    unmount();
+
+    expect(signal?.aborted).toBe(true);
   });
 
   it("renders changelog entries on success", async () => {
