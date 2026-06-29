@@ -90,6 +90,10 @@ agentpay-frontend/
     └── ci.yml                                    # CI: build, test
 ```
 
+## Route architecture
+
+For a detailed breakdown of each route's responsibility, render mode (server vs client), nested layout, and backend endpoints, see [docs/architecture.md](docs/architecture.md).
+
 ## Route map (frontend)
 
 Backend endpoints are taken from the companion documentation page `src/app/docs/page.tsx` and from the API client usage throughout `src/app/*`.
@@ -103,7 +107,7 @@ Backend endpoints are taken from the companion documentation page `src/app/docs/
 | `/agents/:agent`              | Single-agent view                            | _(reads agent details via `/api/v1/agents/:agent` in code)_                                                                                       |
 | `/api-keys`                   | API keys management                          | _(list/create/delete/update endpoints in code)_                                                                                                   |
 | `/changelog`                  | Changelog                                    | _(static or calls `/api/v1/changelog` depending on implementation)_                                                                               |
-| `/docs`                       | Short API endpoint reference                 | `GET /api/v1/openapi.json` plus the prose list rendered from `sections` in `src/app/docs/page.tsx` (usage, settle, services, admin pause/unpause) |
+| `/docs` | Short API endpoint reference | `GET /api/v1/openapi.json` plus the prose list rendered from `src/app/docs/page.tsx` (usage, settle, services, admin pause/unpause). Each endpoint includes a copyable curl example. |
 | `/events`                     | Event log renderer                           | _(reads events stream/poll via `/api/v1/events` endpoints in code)_                                                                               |
 | `/export`                     | Export data                                  | _(calls export endpoints in code)_                                                                                                                |
 | `/search`                     | Global search                                | _(calls search endpoint in code)_                                                                                                                 |
@@ -112,7 +116,7 @@ Backend endpoints are taken from the companion documentation page `src/app/docs/
 | `/services/:serviceId/agents` | Agents for a given service                   | `GET /api/v1/services/:serviceId/agents`                                                                                                          |
 | `/services/:serviceId/edit`   | Edit service                                 | _(reads service + submits via service update endpoints in code)_                                                                                  |
 | `/services/new`               | Create service                               | `POST /api/v1/services`                                                                                                                           |
-| `/settings`                   | User/app settings                            | _(calls settings endpoints in code)_                                                                                                              |
+| `/settings`                   | User/app settings (theme configuration and Connection section displaying the resolved API base URL) | _(static UI settings surface)_                                                                                                                    |
 | `/stats`                      | Statistics                                   | _(calls stats endpoints in code)_                                                                                                                 |
 | `/usage`                      | Usage totals & settlement workflow           | `POST /api/v1/usage`, `GET /api/v1/usage/:agent/:serviceId`, `POST /api/v1/settle`                                                                |
 | `/webhooks`                   | Webhooks management                          | _(calls webhooks endpoints in code)_ and displays each webhook registration time relatively with an absolute timestamp tooltip                    |
@@ -128,6 +132,12 @@ primitives in `src/components`.
 See [docs/hooks.md](docs/hooks.md) for the shared hook reference, including
 signatures, return shapes, cancellation and SSR notes, and usage examples for
 the hooks in `src/lib`.
+
+The agent detail route uses `useApi` for its primary usage request, keyed by the
+URL-encoded agent identifier. Navigating between agents aborts the superseded
+usage request and ignores any stale completion. Its optional lifetime-total
+request remains a soft failure, but is guarded so a slower previous agent cannot
+overwrite the current agent's total.
 
 ## Error boundaries
 
@@ -179,6 +189,8 @@ Key design decisions:
 
 On small screens (below Tailwind `md`), the Header collapses into an accessible disclosure menu with a keyboard-operable toggle (Escape closes; focus returns to the toggle). The inline primary navigation remains for `md` and larger screens.
 
+Additionally, the Header marks exactly one active route strictly utilizing `aria-current="page"` (leveraging the client-side `usePathname()` context), creating a robust "you are here" cue for assistive technologies.
+
 ## Accessibility
 
 
@@ -195,6 +207,23 @@ pulse animation is disabled for users who request reduced motion via the
 `prefers-reduced-motion` rules in [`src/app/globals.css`](src/app/globals.css). This
 satisfies [WCAG 4.1.3 Status Messages](https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html).
 Behaviour is covered by [`src/app/loading.test.tsx`](src/app/loading.test.tsx).
+
+### Search result announcements
+
+The search page ([`src/app/search/page.tsx`](src/app/search/page.tsx)) includes a
+visually-hidden `aria-live="polite"` region that announces the number of search results
+to screen readers after the debounced query settles. This ensures assistive-technology
+users receive feedback about result counts without focus being stolen from the search
+input. The announcement format is:
+- "N results for 'query'" for one or more matches
+- "No matches for 'query'" when the search returns zero results or fails
+- No announcement for empty queries
+
+The live region coordinates with the 250ms debounce timing to avoid spamming announcements
+on every keystroke. The region is marked with `aria-atomic="true"` and uses the `sr-only`
+class for visual hiding. This implementation satisfies
+[WCAG 4.1.3 Status Messages](https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html).
+Behaviour is covered by [`src/app/search/page.test.tsx`](src/app/search/page.test.tsx).
 
 ## API integration
 
@@ -271,6 +300,8 @@ When rendering links:
 
 - Any external link rendered with `target="_blank"` must include `rel="noopener noreferrer"`.
 - Any `href` derived from backend/user data must be validated with `safeHref()` from `src/lib/url.ts`. Unsafe schemes like `javascript:` and `data:` are rejected.
+- Links on the `/docs` page (relative OpenAPI and external GitHub reference link) are validated through `safeHref()`, falling back to plain text if validation fails.
+
 ## Route map (frontend)
 
 | Path | Notes |
@@ -308,6 +339,10 @@ The `/events` page renders server-supplied JSON payloads with performance safegu
 
 The `/changelog` page keeps using `useApi("/api/v1/changelog")` for loading release notes. When the backend returns `{ entries: [] }`, it renders the shared `EmptyState` component with a clear "No changelog entries yet" message instead of an empty list. This branch is constant-time and adds no extra network calls.
 
+## Webhooks empty and loading states
+
+The `/webhooks` page shows the shared `Spinner` component during the initial fetch. Once the list resolves, if it is empty, it renders the `EmptyState` component with "No webhooks registered yet" and helpful guidance. When webhooks are present, they are rendered inside an accessible region for better screen-reader discovery.
+
 ## Formatting conventions
 
 The frontend formats currency (Stroops / XLM) consistently using the helper `formatStroops` (located in `src/lib/format.ts`):
@@ -340,8 +375,10 @@ i18n library is wired up yet and no rendered copy changes.
   ```
 
 - **Migrated so far:** [`src/components/Footer.tsx`](src/components/Footer.tsx),
-  the home page [`src/app/page.tsx`](src/app/page.tsx), and the about page
-  [`src/app/about/page.tsx`](src/app/about/page.tsx). Follow the same pattern when
+  the home page [`src/app/page.tsx`](src/app/page.tsx), the about page
+  [`src/app/about/page.tsx`](src/app/about/page.tsx), the docs page
+  [`src/app/docs/page.tsx`](src/app/docs/page.tsx), and the settings page
+  [`src/app/settings/page.tsx`](src/app/settings/page.tsx). Follow the same pattern when
   touching other surfaces — add the string to a namespace in `messages.ts`, then
   reference it from the component.
 - **Future i18n:** because the catalog is framework-agnostic, adopting
@@ -376,6 +413,13 @@ The root layout keeps the home route on the default `AgentPay` title and applies
 
 The `/about` page now exposes direct links to the dashboard surfaces described in its copy: `/services`, `/usage`, `/docs`, `/events`, `/webhooks`, `/api-keys`, and `/admin`.
 
+## Form validation
+
+Forms in the application (such as the New Service form `/services/new`) follow these validation and accessibility standards:
+- **Shared Primitive Components:** Reusable input fields use the `TextField` component (`src/components/TextField.tsx`) and standard `Button` components.
+- **Per-Field Validation Errors:** Local validation errors (e.g. invalid inputs or formatting issues verified via `src/lib/validateNumber.ts`) are passed directly to the `TextField`'s `error` prop. This flips `aria-invalid` to `true` and attaches the message using `aria-describedby` dynamically.
+- **Page-Level Alerts:** Generic API errors and backend validation failures (e.g. `invalid_request`) are rendered at the page level inside a dedicated alert region with `role="alert"` so assistive technologies announce them immediately.
+
 ## Services list paging
 
 The `/services` page now uses server-driven pagination with the shared `Spinner`, `EmptyState`, and `Pagination` components.
@@ -398,6 +442,7 @@ The `/agents` page lists every agent identity seen by the backend, paginated wit
 - Each row is a `<Link>` to `/agents/:agent` with the identifier fully `encodeURIComponent`-encoded, so agents with slashes or other special characters route correctly.
 - `Pagination` hides itself automatically when `pageCount ≤ 1`, so no pagination bar appears for a single-page result.
 - Backend errors are surfaced as a `role="alert"` paragraph; the pagination bar is suppressed while an error is shown.
+- The single-agent view (`/agents/:agent`) utilizes a semantic `<Breadcrumb>` trail for accessible orientation.
 
 ## Commands
 

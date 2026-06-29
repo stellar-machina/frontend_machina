@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { apiGet } from "@/lib/apiClient";
+import { useApi } from "@/lib/useApi";
 
 type Usage = { agent: string; items: { serviceId: string; total: number }[] };
+type TotalState = { agent: string; total: number } | null;
 
 export default function AgentDetailPage({
   params,
@@ -12,22 +14,29 @@ export default function AgentDetailPage({
   params: Promise<{ agent: string }>;
 }) {
   const { agent } = use(params);
-  const [items, setItems] = useState<Usage["items"] | null>(null);
-  const [total, setTotal] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const encodedAgent = encodeURIComponent(agent);
+  const usageState = useApi<Usage>(`/api/v1/agents/${encodedAgent}/usage`);
+  const [totalState, setTotalState] = useState<TotalState>(null);
 
   useEffect(() => {
-    apiGet<Usage>(`/api/v1/agents/${encodeURIComponent(agent)}/usage`)
-      .then((b) => setItems(b.items))
-      .catch((e) => setError(e.message));
-    apiGet<{ total: number }>(
-      `/api/v1/agents/${encodeURIComponent(agent)}/total`
-    )
-      .then((b) => setTotal(b.total))
+    let cancelled = false;
+
+    apiGet<{ total: number }>(`/api/v1/agents/${encodedAgent}/total`)
+      .then((b) => {
+        if (!cancelled) setTotalState({ agent, total: b.total });
+      })
       .catch(() => {
         /* total is optional */
       });
-  }, [agent]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [agent, encodedAgent]);
+
+  const items = usageState.status === "ok" ? usageState.data.items : null;
+  const error = usageState.status === "error" ? usageState.error : null;
+  const total = totalState?.agent === agent ? totalState.total : null;
 
   return (
     <main
@@ -35,9 +44,7 @@ export default function AgentDetailPage({
       tabIndex={-1}
       className="mx-auto flex min-h-[60vh] max-w-3xl flex-col gap-6 p-8 focus:outline-none"
     >
-      <Link href="/agents" className="text-sm text-zinc-500 hover:underline">
-        ← Back to agents
-      </Link>
+      <Breadcrumb items={[{ label: "Agents", href: "/agents" }, { label: agent }]} />
       <h1 className="text-3xl font-semibold tracking-tight font-mono">{agent}</h1>
       {error && (
         <p role="alert" className="text-sm text-rose-600">
@@ -46,7 +53,7 @@ export default function AgentDetailPage({
       )}
       {total !== null && (
         <p className="text-sm">
-          Lifetime total: <strong>{total}</strong> requests
+          Lifetime total: <strong>{formatRequests(total)}</strong> requests
         </p>
       )}
       {items && items.length === 0 && (
@@ -57,7 +64,7 @@ export default function AgentDetailPage({
           {items.map((s) => (
             <li key={s.serviceId} className="flex items-center justify-between py-3 text-sm">
               <span className="font-mono">{s.serviceId}</span>
-              <span>{s.total} requests</span>
+              <span>{formatRequests(s.total)} requests</span>
             </li>
           ))}
         </ul>

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { SearchBar } from "@/components/SearchBar";
 import { TimeAgo } from "@/components/TimeAgo";
+import { Spinner } from "@/components/Spinner";
 import { apiGet } from "@/lib/apiClient";
 import { safeFormatTimestamp, safeStringify } from "@/lib/format";
 import { useDebounce } from "@/lib/useDebounce";
@@ -27,6 +28,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object";
 }
 
+/**
+ * Parse a loosely-typed EventsResponse into a list of AppEvents.
+ *
+ * Supports two response shapes:
+ * - { items: AppEvent[] }
+ * - { events: AppEvent[] }
+ *
+ * Each event field is validated or coerced to ensure it matches the AppEvent type.
+ * Specifically, the 'ts' field is coerced to null if it's not a number, string, or null.
+ *
+ * @throws {Error} if the payload is not an object or does not contain an array of items/events.
+ */
 function parseEventsResponse(body: EventsResponse): AppEvent[] {
   const items = Array.isArray(body.items)
     ? body.items
@@ -43,9 +56,15 @@ function parseEventsResponse(body: EventsResponse): AppEvent[] {
       throw new Error("Malformed events payload");
     }
 
+    const ts = item.ts;
+    const validatedTs: AppEvent["ts"] =
+      typeof ts === "number" || typeof ts === "string" || ts === null
+        ? ts
+        : null;
+
     return {
       id: typeof item.id === "string" ? item.id : String(item.id ?? index),
-      ts: item.ts as AppEvent["ts"],
+      ts: validatedTs,
       type: typeof item.type === "string" ? item.type : String(item.type ?? ""),
       payload: "payload" in item ? item.payload : undefined,
     };
@@ -179,7 +198,11 @@ export default function EventsPage() {
         </p>
       )}
 
-      {loading && !error && <p>Loading…</p>}
+      {loading && !error && (
+        <div role="status" aria-busy="true" className="flex justify-center py-10">
+          <Spinner label="Loading events" />
+        </div>
+      )}
 
       {!loading && !error && visibleItems && visibleItems.length === 0 && (
         <EmptyState

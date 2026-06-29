@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import WebhooksPage from "./page";
 
 const NOW = Date.UTC(2024, 0, 1, 12, 0, 0);
@@ -107,7 +107,8 @@ it("calls DELETE and closes dialog when confirmed", async () => {
     .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ items: [] }) } as unknown as Response);
 
   fireEvent.click(screen.getByRole("button", { name: /^remove$/i }));
-  const confirmBtn = screen.getAllByRole("button", { name: /^remove$/i })[0];
+  const dialog = screen.getByRole("dialog");
+  const confirmBtn = within(dialog).getByRole("button", { name: /^remove$/i });
   fireEvent.click(confirmBtn);
 
   await waitFor(() => {

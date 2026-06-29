@@ -4,7 +4,7 @@ import {
   originOf,
   resolveApiBase,
   type BuildSecurityHeadersOptions,
-} from "../lib/securityHeaders";
+} from "../securityHeaders";
 
 const prod: BuildSecurityHeadersOptions = {
   apiBase: "https://api.example.com",
