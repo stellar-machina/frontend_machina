@@ -53,14 +53,13 @@ describe("Header", () => {
     mockPathname.mockReturnValue("/");
     render(<Header />);
     
-    // Exactly one link has aria-current="page"
+    // Exactly one link has aria-current="page". The mobile menu panel is only
+    // rendered while open, so at rest only the desktop "Home" link is active.
     const activeLinks = screen.getAllByRole("link").filter(
       (link) => link.getAttribute("aria-current") === "page"
     );
-    // Home link is active twice (desktop + mobile)
-    expect(activeLinks.length).toBe(2);
+    expect(activeLinks.length).toBe(1);
     expect(activeLinks[0]).toHaveTextContent("Home");
-    expect(activeLinks[1]).toHaveTextContent("Home");
   });
 
   it("marks zero links as active for an unknown route", () => {
@@ -80,14 +79,15 @@ describe("Header", () => {
     // Open the secondary menu to expose secondary links
     fireEvent.click(screen.getByRole("button", { name: /more/i }));
     
-    // The active links should strictly be the desktop "Services" and the mobile "Services"
+    // With the mobile panel closed, the only current link is the desktop
+    // "Services" primary link; the opened "More" menu holds secondary links,
+    // none of which match /services.
     const activeLinks = screen.getAllByRole("link", { hidden: true }).filter(
       (link) => link.getAttribute("aria-current") === "page"
     );
-    
-    expect(activeLinks.length).toBe(2);
+
+    expect(activeLinks.length).toBe(1);
     expect(activeLinks[0]).toHaveTextContent("Services");
-    expect(activeLinks[1]).toHaveTextContent("Services");
   });
 
   it("shows More button that opens secondary menu", () => {
