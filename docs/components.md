@@ -234,11 +234,16 @@ options as an ARIA button group.
 | Prop | Type | Required | Notes |
 | --- | --- | --- | --- |
 | `variant` | `"ok" \| "warn" \| "down"` | yes | Maps to Operational, Degraded, or Down text. |
+| `label` | `ReactNode` | no | Overrides the default per-variant text. An omitted, `null`, or empty-string value falls back to the variant default, so a label is always present. |
 
-The color dot is decorative; the visible label carries the status meaning.
+The color dot is decorative (`aria-hidden`); the visible label carries the
+status meaning. Use `label` to reuse the same dot affordance for states outside
+the three defaults — for example `"Paused"` on a `warn` dot — without rendering a
+separate element.
 
 ```tsx
 <StatusDot variant="warn" />
+<StatusDot variant="warn" label="Paused" />
 ```
 
 ### `Spinner`
