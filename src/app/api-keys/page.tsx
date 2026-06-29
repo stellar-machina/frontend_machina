@@ -8,16 +8,16 @@ import { CopyButton } from "@/components/CopyButton";
 type KeyItem = { prefix: string; label: string; createdAt: number };
 
 export default function ApiKeysPage() {
-  const [items, setItems] = useState(null as KeyItem[] | null);
+  const [items, setItems] = useState<KeyItem[] | null>(null);
   const [label, setLabel] = useState("");
-  const [created, setCreated] = useState(null as string | null);
+  const [created, setCreated] = useState<string | null>(null);
   const [showFull, setShowFull] = useState(false);
-  const [error, setError] = useState(null as string | null);
-  const [pendingRevoke, setPendingRevoke] = useState(null as KeyItem | null);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingRevoke, setPendingRevoke] = useState<KeyItem | null>(null);
 
   const load = () =>
-    apiGet("/api/v1/api-keys")
-      .then((b) => setItems((b as { items: KeyItem[] }).items))
+    apiGet<{ items: KeyItem[] }>("/api/v1/api-keys")
+      .then((b) => setItems(b.items))
       .catch((e: Error) => setError(e.message));
 
   useEffect(() => {
@@ -28,8 +28,8 @@ export default function ApiKeysPage() {
     e.preventDefault();
     setError(null);
     try {
-      const res = await apiPost("/api/v1/api-keys", { label });
-      setCreated((res as { key: string }).key);
+      const res = await apiPost<{ key: string }>("/api/v1/api-keys", { label });
+      setCreated(res.key);
       setShowFull(false);
       setLabel("");
       await load();
