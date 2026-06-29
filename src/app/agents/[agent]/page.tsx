@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { apiGet } from "@/lib/apiClient";
+import { formatRequests } from "@/lib/format";
 
 type Usage = { agent: string; items: { serviceId: string; total: number }[] };
 
@@ -44,7 +45,7 @@ export default function AgentDetailPage({
       )}
       {total !== null && (
         <p className="text-sm">
-          Lifetime total: <strong>{total}</strong> requests
+          Lifetime total: <strong>{formatRequests(total)}</strong> requests
         </p>
       )}
       {items && items.length === 0 && (
@@ -55,7 +56,7 @@ export default function AgentDetailPage({
           {items.map((s) => (
             <li key={s.serviceId} className="flex items-center justify-between py-3 text-sm">
               <span className="font-mono">{s.serviceId}</span>
-              <span>{s.total} requests</span>
+              <span>{formatRequests(s.total)} requests</span>
             </li>
           ))}
         </ul>

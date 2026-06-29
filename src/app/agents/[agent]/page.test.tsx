@@ -77,4 +77,70 @@ describe("AgentDetailPage", () => {
     const currentItem = screen.getByText(specialId, { selector: '[aria-current="page"]' });
     expect(currentItem).toBeInTheDocument();
   });
+
+  it("formats a large lifetime total with thousands separators", async () => {
+    mockApiGet.mockReset();
+    mockApiGet.mockImplementation((url: string) => {
+      if (url.endsWith("/total")) return Promise.resolve({ total: 1234567 }) as never;
+      if (url.endsWith("/usage")) return Promise.resolve({ items: [] }) as never;
+      return Promise.reject(new Error("Not found")) as never;
+    });
+
+    renderPage("agent-big");
+
+    const strong = await screen.findByText("1,234,567");
+    expect(strong.tagName).toBe("STRONG");
+    expect(strong.parentElement).toHaveTextContent("1,234,567 requests");
+  });
+
+  it("formats per-service totals with thousands separators", async () => {
+    mockApiGet.mockReset();
+    mockApiGet.mockImplementation((url: string) => {
+      if (url.endsWith("/total")) return Promise.resolve({ total: 0 }) as never;
+      if (url.endsWith("/usage"))
+        return Promise.resolve({
+          items: [
+            { serviceId: "svc-a", total: 999 },
+            { serviceId: "svc-b", total: 1500000 },
+          ],
+        }) as never;
+      return Promise.reject(new Error("Not found")) as never;
+    });
+
+    renderPage("agent-svc");
+
+    await screen.findByText(/Lifetime total/i);
+
+    expect(screen.getByText("999 requests")).toBeInTheDocument();
+    expect(screen.getByText("1,500,000 requests")).toBeInTheDocument();
+  });
+
+  it("renders zero total without grouping", async () => {
+    mockApiGet.mockReset();
+    mockApiGet.mockImplementation((url: string) => {
+      if (url.endsWith("/total")) return Promise.resolve({ total: 0 }) as never;
+      if (url.endsWith("/usage")) return Promise.resolve({ items: [] }) as never;
+      return Promise.reject(new Error("Not found")) as never;
+    });
+
+    renderPage("agent-zero");
+
+    const strong = await screen.findByText("0");
+    expect(strong.tagName).toBe("STRONG");
+  });
+
+  it("does not render lifetime total when the optional total fetch fails", async () => {
+    mockApiGet.mockReset();
+    mockApiGet.mockImplementation((url: string) => {
+      if (url.endsWith("/total")) return Promise.reject(new Error("boom")) as never;
+      if (url.endsWith("/usage")) return Promise.resolve({ items: [] }) as never;
+      return Promise.reject(new Error("Not found")) as never;
+    });
+
+    renderPage("agent-no-total");
+
+    await screen.findByText(/No services consumed yet/i);
+
+    expect(screen.queryByText(/Lifetime total/i)).not.toBeInTheDocument();
+  });
 });
