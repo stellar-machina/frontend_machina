@@ -101,7 +101,7 @@ Backend endpoints are taken from the companion documentation page `src/app/docs/
 | `/admin`                      | Admin control surface (pause/unpause/status) | `POST /api/v1/admin/pause`, `POST /api/v1/admin/unpause`, _(reads status via GET `/api/v1/admin/status` in code)_                                 |
 | `/agents`                     | Agents overview                              | _(reads agents list via `/api/v1/agents` in code)_                                                                                                |
 | `/agents/:agent`              | Single-agent view                            | _(reads agent details via `/api/v1/agents/:agent` in code)_                                                                                       |
-| `/api-keys`                   | API keys management                          | _(list/create/delete/update endpoints in code)_                                                                                                   |
+| `/api-keys`                   | API keys management with created-at timestamps and a no-keys empty state | _(list/create/delete/update endpoints in code)_                                                                                                   |
 | `/changelog`                  | Changelog                                    | _(static or calls `/api/v1/changelog` depending on implementation)_                                                                               |
 | `/docs`                       | Short API endpoint reference                 | `GET /api/v1/openapi.json` plus the prose list rendered from `sections` in `src/app/docs/page.tsx` (usage, settle, services, admin pause/unpause) |
 | `/events`                     | Event log renderer                           | _(reads events stream/poll via `/api/v1/events` endpoints in code)_                                                                               |
@@ -116,6 +116,10 @@ Backend endpoints are taken from the companion documentation page `src/app/docs/
 | `/stats`                      | Statistics                                   | _(calls stats endpoints in code)_                                                                                                                 |
 | `/usage`                      | Usage totals & settlement workflow           | `POST /api/v1/usage`, `GET /api/v1/usage/:agent/:serviceId`, `POST /api/v1/settle`                                                                |
 | `/webhooks`                   | Webhooks management                          | _(calls webhooks endpoints in code)_                                                                                                              |
+
+### API keys page notes
+
+The `/api-keys` page lists each key label, prefix, and created-at age with the absolute ISO timestamp available on hover. If the account has no keys, the page renders a clear "No API keys yet" empty state instead of an empty list while preserving the create, reveal-once, copy, and revoke confirmation flows.
 
 ## Shared components
 
