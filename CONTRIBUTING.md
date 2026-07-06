@@ -1,6 +1,6 @@
-# Contributing to AgentPay Frontend
+# Contributing to Stellar Machina Frontend
 
-Thanks for helping improve the AgentPay frontend. This guide documents the workflow, review expectations, and UI conventions used by the project and its GrantFox OSS campaign issues.
+Thanks for helping improve the Stellar Machina frontend. This guide documents the workflow, review expectations, and UI conventions used by the project and its GrantFox OSS campaign issues.
 
 ## Project Setup
 
@@ -104,4 +104,4 @@ Never commit API keys, wallet seeds, private keys, `.env` files, or production c
 
 ## Community and Rewards
 
-This repository participates in the GrantFox OSS campaign. For questions and review coordination, use the AgentPay community Discord linked from campaign issues. Rewards are handled by the campaign maintainers after merge when an issue is eligible.
+This repository participates in the GrantFox OSS campaign. For questions and review coordination, use the Stellar Machina community Discord linked from campaign issues. Rewards are handled by the campaign maintainers after merge when an issue is eligible.
