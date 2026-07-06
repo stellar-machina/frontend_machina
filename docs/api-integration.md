@@ -1,6 +1,6 @@
 # Dashboard API integration reference
 
-This document catalogues every backend endpoint the AgentPay dashboard calls, with
+This document catalogues every backend endpoint the Stellar Machina dashboard calls, with
 the exact request body and the response shape the UI expects. Shapes are derived
 from `src/lib/apiClient.ts` and the inline TypeScript declarations in each page —
 **every shape below matches the code at the cited source.**

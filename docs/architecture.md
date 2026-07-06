@@ -37,14 +37,14 @@ Segments may define their own `layout.tsx` (invariably thin wrappers that return
 
 | Path | Route name | Render mode | Backend endpoints called | Nested layout / title source |
 |------|-----------|-------------|-------------------------|------------------------------|
-| `/` | Home | Server (no `"use client"`) | None — static landing with quick-link navigation | Root layout; title `AgentPay` (root default) |
-| `/about` | About | Server (no `"use client"`) | None — static surface overview | Root layout; title `About — AgentPay` (exported from `page.tsx`) |
+| `/` | Home | Server (no `"use client"`) | None — static landing with quick-link navigation | Root layout; title `Stellar Machina` (root default) |
+| `/about` | About | Server (no `"use client"`) | None — static surface overview | Root layout; title `About — Stellar Machina` (exported from `page.tsx`) |
 | `/admin` | Admin | Client (`"use client"`) | `GET /api/v1/admin/status`; `POST /api/v1/admin/pause`; `POST /api/v1/admin/unpause` | `admin/layout.tsx`; title `Admin` (`pageTitles.admin`) |
 | `/agents` | Agents | Client (`"use client"`) | `GET /api/v1/stats`; `GET /api/v1/agents?page=N&limit=25` | `agents/layout.tsx`; title `Agents` (`pageTitles.agents`) |
 | `/agents/:agent` | Agent detail | Client (`"use client"`) | `GET /api/v1/agents/:agent/usage`; `GET /api/v1/agents/:agent/total` | `agents/[agent]/layout.tsx`; title `Agent <agent>` (`agentTitle`) |
 | `/api-keys` | API keys | Client (`"use client"`) | `GET /api/v1/api-keys`; `POST /api/v1/api-keys`; `DELETE /api/v1/api-keys/:prefix` | `api-keys/layout.tsx`; title `API keys` (`pageTitles.apiKeys`) |
-| `/changelog` | Changelog | Client (`"use client"`) | `GET /api/v1/changelog` | Root layout; title `AgentPay` (root default; `page.tsx` does not export metadata) |
-| `/docs` | Docs | Server (no `"use client"`) | None — static endpoint reference (links to `/api/v1/openapi.json`) | Root layout; title `Docs — AgentPay` (exported from `page.tsx`) |
+| `/changelog` | Changelog | Client (`"use client"`) | `GET /api/v1/changelog` | Root layout; title `Stellar Machina` (root default; `page.tsx` does not export metadata) |
+| `/docs` | Docs | Server (no `"use client"`) | None — static endpoint reference (links to `/api/v1/openapi.json`) | Root layout; title `Docs — Stellar Machina` (exported from `page.tsx`) |
 | `/events` | Events | Client (`"use client"`) | `GET /api/v1/events?limit=100&type=<filter>` (with optional auto-refresh polling) | `events/layout.tsx`; title `Event log` (`pageTitles.events`) |
 | `/export` | Export | Server (no `"use client"`) | None — browser navigates directly to backend URLs | Root layout; title `Export` (exported from `page.tsx`) |
 | `/search` | Search | Client (`"use client"`) | `GET /api/v1/services?q=<query>&limit=50` (250ms debounced) | `search/layout.tsx`; title `Search` (`pageTitles.search`) |
@@ -53,7 +53,7 @@ Segments may define their own `layout.tsx` (invariably thin wrappers that return
 | `/services/:serviceId/agents` | Service agents | Client (`"use client"`) | `GET /api/v1/services/:serviceId/agents/top?limit=25` | `services/[serviceId]/agents/layout.tsx`; title `Top agents <serviceId>` (`serviceAgentsTitle`) |
 | `/services/:serviceId/edit` | Edit service | Client (`"use client"`) | `GET /api/v1/services/:serviceId`; `PATCH /api/v1/services/:serviceId/price` | `services/[serviceId]/edit/layout.tsx`; title `Edit service <serviceId>` (`serviceEditTitle`) |
 | `/services/new` | New service | Client (`"use client"`) | `POST /api/v1/services` | `services/new/layout.tsx`; title `New service` (`pageTitles.serviceNew`) |
-| `/settings` | Settings | Server (no `"use client"`) | None — renders `ThemeToggle` client component only | Root layout; title `Settings — AgentPay` (exported from `page.tsx`) |
+| `/settings` | Settings | Server (no `"use client"`) | None — renders `ThemeToggle` client component only | Root layout; title `Settings — Stellar Machina` (exported from `page.tsx`) |
 | `/stats` | Stats | Client (`"use client"`) | `GET /api/v1/stats` (polled every 5 s) | `stats/layout.tsx`; title `Stats` (`pageTitles.stats`) |
 | `/usage` | Usage metering | Client (`"use client"`) | `POST /api/v1/usage`; `GET /api/v1/usage/:agent/:serviceId` | `usage/layout.tsx`; title `Usage metering` (`pageTitles.usage`) |
 | `/webhooks` | Webhooks | Client (`"use client"`) | `GET /api/v1/webhooks`; `POST /api/v1/webhooks`; `DELETE /api/v1/webhooks/:id` | `webhooks/layout.tsx`; title `Webhooks` (`pageTitles.webhooks`) |
@@ -62,7 +62,7 @@ Segments may define their own `layout.tsx` (invariably thin wrappers that return
 
 Titles fall into three categories:
 
-1. **Root default** — `/` and `/changelog` inherit the root layout's default `AgentPay` title because they do not export metadata themselves.
+1. **Root default** — `/` and `/changelog` inherit the root layout's default `Stellar Machina` title because they do not export metadata themselves.
 2. **Page-exported metadata** — `/about`, `/docs`, `/export`, and `/settings` export `metadata` directly from `page.tsx` with a fixed string.
 3. **Layout-exported metadata** — all other routes use a nested `layout.tsx` that sets `metadata.title` from `pageTitles.ts` or dynamically via `generateMetadata` for dynamic segments (`/services/:serviceId`, `/agents/:agent`).
 

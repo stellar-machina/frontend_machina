@@ -1,11 +1,11 @@
-# AgentPay Frontend
+# Stellar Machina Frontend
 
-Dashboard and Stellar wallet integration for the AgentPay protocol (machine-to-machine payments on Stellar).
+Dashboard and Stellar wallet integration for the Stellar Machina protocol (machine-to-machine payments on Stellar).
 
 ## Overview
 
 - **Stack:** Next.js 16, React, TypeScript, Tailwind CSS
-- **Purpose:** AgentPay branding, dashboard placeholder, and future wallet/API integration
+- **Purpose:** Stellar Machina branding, dashboard placeholder, and future wallet/API integration
 
 ## Prerequisites
 
@@ -239,7 +239,7 @@ shared `ApiError` envelope, the 204/no-body convention, and pause-flag semantics
 
 | Variable                        | Visibility                      | Default                 | Purpose                                                                                                                                                                         |
 | ------------------------------- | ------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_AGENTPAY_API_BASE` | public (bundled into client JS) | `http://localhost:3001` | Base URL for the AgentPay backend. Validated by `resolveApiBase()` in `src/lib/resolveApiBase.ts` and rejected in production if non-https except for `localhost` / `127.0.0.1`. |
+| `NEXT_PUBLIC_AGENTPAY_API_BASE` | public (bundled into client JS) | `http://localhost:3001` | Base URL for the Stellar Machina backend. Validated by `resolveApiBase()` in `src/lib/resolveApiBase.ts` and rejected in production if non-https except for `localhost` / `127.0.0.1`. |
 | `NEXT_PUBLIC_AGENTPAY_SITE_ORIGIN` | public (metadata route output) | `http://localhost:3000` | Canonical frontend origin used by `src/app/sitemap.ts` and `src/app/robots.ts`. Set this per deployment, for example `https://dashboard.example.com`; trailing slashes are trimmed. |
 
 Because the variable is `NEXT_PUBLIC_*`, its value is exposed to the browser. Never put API secrets in it - it is used only for routing public HTTP requests.
@@ -394,12 +394,12 @@ i18n library is wired up yet and no rendered copy changes.
 
 ## Document titles
 
-The root layout keeps the home route on the default `AgentPay` title and applies the template `"%s — AgentPay"` to route-specific titles.
+The root layout keeps the home route on the default `Stellar Machina` title and applies the template `"%s — Stellar Machina"` to route-specific titles.
 
 | Route | Title |
 |-------|-------|
-| `/` | `AgentPay` |
-| `/about` | `About AgentPay` |
+| `/` | `Stellar Machina` |
+| `/about` | `About Stellar Machina` |
 | `/services` | `Services` |
 | `/services/new` | `New service` |
 | `/usage` | `Usage metering` |

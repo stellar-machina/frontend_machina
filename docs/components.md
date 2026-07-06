@@ -1,7 +1,7 @@
 # Component Catalog
 
 This catalog documents the shared UI primitives in `src/components`. Use it as
-the first stop when building AgentPay pages so page code stays consistent,
+the first stop when building Stellar Machina pages so page code stays consistent,
 accessible, and easy to review.
 
 ## Conventions
@@ -18,7 +18,7 @@ accessible, and easy to review.
 
 | Prop | Type | Required | Notes |
 | --- | --- | --- | --- |
-| none | - | - | Renders the AgentPay brand link and the main navigation links. |
+| none | - | - | Renders the Stellar Machina brand link and the main navigation links. |
 
 Use `Header` once in the app shell. It already exposes the nav with
 `aria-label="Main navigation"` and focus-visible styles on each link.
@@ -31,7 +31,7 @@ Use `Header` once in the app shell. It already exposes the nav with
 
 | Prop | Type | Required | Notes |
 | --- | --- | --- | --- |
-| none | - | - | Renders the shared AgentPay footer tagline. |
+| none | - | - | Renders the shared Stellar Machina footer tagline. |
 
 ```tsx
 <Footer />
@@ -65,7 +65,7 @@ PageShell wraps pages inside the `<main id="main-content">` accessible landmark,
 ```tsx
 <PageHeading
   title="Services"
-  description="Manage the services that can bill AgentPay requests."
+  description="Manage the services that can bill Stellar Machina requests."
   action={<Button>Create service</Button>}
 />
 ```
@@ -149,7 +149,7 @@ the action cannot be undone.
 <TextField
   label="Webhook URL"
   type="url"
-  description="Use an HTTPS endpoint that can receive AgentPay events."
+  description="Use an HTTPS endpoint that can receive Stellar Machina events."
 />
 ```
 
