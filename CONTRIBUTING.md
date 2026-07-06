@@ -1,6 +1,6 @@
 # Contributing to Stellar Machina Frontend
 
-Thanks for helping improve the Stellar Machina frontend. This guide documents the workflow, review expectations, and UI conventions used by the project and its GrantFox OSS campaign issues.
+Thanks for helping improve the Stellar Machina frontend. This guide documents the workflow, review expectations, and UI conventions used by the project and its OSS campaign issues.
 
 ## Project Setup
 
