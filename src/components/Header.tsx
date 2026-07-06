@@ -184,7 +184,7 @@ export function Header() {
           href="/"
           className="text-lg font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
         >
-          AgentPay
+          Stellar Machina
         </Link>
 
         {/* Desktop links — always visible on md+ */}

@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "AgentPay",
-    short_name: "AgentPay",
+    name: "Stellar Machina",
+    short_name: "Stellar Machina",
     description: "Machine-to-machine payment protocol on Stellar",
     start_url: "/",
     display: "standalone",

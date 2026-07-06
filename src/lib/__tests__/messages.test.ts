@@ -45,11 +45,11 @@ describe("messages catalog", () => {
 
   it("resolves a representative key from each namespace", () => {
     expect(messages.footer.text).toBe(
-      "AgentPay — machine-to-machine payments on Stellar. Pay per request."
+      "Stellar Machina — machine-to-machine payments on Stellar. Pay per request."
     );
-    expect(messages.home.heading).toBe("AgentPay");
+    expect(messages.home.heading).toBe("Stellar Machina");
     expect(messages.home.links.services).toBe("Manage services");
-    expect(messages.about.heading).toBe("About AgentPay");
+    expect(messages.about.heading).toBe("About Stellar Machina");
   });
 
   it("exposes only non-empty string leaves", () => {
@@ -92,7 +92,7 @@ describe("migrated surfaces render the catalog copy unchanged", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "AgentPay — machine-to-machine payments on Stellar. Pay per request."
+        "Stellar Machina — machine-to-machine payments on Stellar. Pay per request."
       )
     ).toBeInTheDocument();
   });

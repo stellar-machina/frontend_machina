@@ -5,8 +5,8 @@ describe("manifest metadata route", () => {
     const config = manifest();
 
     // Required fields assertion
-    expect(config.name).toBe("AgentPay");
-    expect(config.short_name).toBe("AgentPay");
+    expect(config.name).toBe("Stellar Machina");
+    expect(config.short_name).toBe("Stellar Machina");
     expect(config.description).toBe("Machine-to-machine payment protocol on Stellar");
     expect(config.start_url).toBe("/");
     expect(config.display).toBe("standalone");

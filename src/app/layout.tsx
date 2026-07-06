@@ -25,24 +25,24 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "AgentPay",
-    template: "%s — AgentPay",
+    default: "Stellar Machina",
+    template: "%s — Stellar Machina",
   },
   description: "Machine-to-machine payment protocol on Stellar",
-  applicationName: "AgentPay",
-  authors: [{ name: "AgentPay" }],
+  applicationName: "Stellar Machina",
+  authors: [{ name: "Stellar Machina" }],
   manifest: "/manifest.webmanifest",
   icons: {
     apple: "/favicon.ico",
   },
   openGraph: {
-    title: "AgentPay",
+    title: "Stellar Machina",
     description: "Pay-per-request billing for AI agents and APIs on Stellar.",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "AgentPay",
+    title: "Stellar Machina",
     description: "Pay-per-request billing for AI agents and APIs on Stellar.",
   },
 };

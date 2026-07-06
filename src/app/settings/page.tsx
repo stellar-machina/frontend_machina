@@ -5,7 +5,7 @@ import { resolveApiBase } from "@/lib/resolveApiBase";
 import { KeyValueGrid } from "@/components/KeyValueGrid";
 import { CopyButton } from "@/components/CopyButton";
 
-export const metadata = { title: "Settings — AgentPay" };
+export const metadata = { title: "Settings — Stellar Machina" };
 
 export default function SettingsPage() {
   const apiBase = resolveApiBase();

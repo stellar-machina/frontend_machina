@@ -1,4 +1,4 @@
-// Lightweight wrapper around fetch() for the AgentPay backend API.
+// Lightweight wrapper around fetch() for the Stellar Machina backend API.
 // Centralises base URL resolution and error handling so call sites stay
 // small.
 
@@ -61,7 +61,7 @@ function createHttpError(status: number, body: unknown, statusText = "") {
 }
 
 /**
- * Fetch JSON from the AgentPay API.
+ * Fetch JSON from the Stellar Machina API.
  *
  * `timeoutMs` defaults to 10 seconds. A caller-provided `signal` is composed
  * with the internal timeout signal, so whichever aborts first wins. Timers and

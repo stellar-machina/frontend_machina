@@ -3,7 +3,7 @@ import { CurlBlock } from "@/components/CurlBlock";
 import { messages } from "@/lib/messages";
 import { resolveApiBase } from "@/lib/resolveApiBase";
 
-export const metadata = { title: "Docs — AgentPay" };
+export const metadata = { title: "Docs — Stellar Machina" };
 
 export default function DocsPage() {
   const baseUrl = resolveApiBase();

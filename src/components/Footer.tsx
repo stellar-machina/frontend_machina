@@ -34,10 +34,10 @@ export function Footer() {
           </a>
         </nav>
         <p>
-          AgentPay — machine-to-machine payments on Stellar. Pay per request.
+          Stellar Machina — machine-to-machine payments on Stellar. Pay per request.
         </p>
         <p>
-          &copy; {currentYear} AgentPay.
+          &copy; {currentYear} Stellar Machina.
         </p>
       </div>
     </footer>

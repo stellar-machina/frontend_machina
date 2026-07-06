@@ -26,7 +26,7 @@ describe("KeyValueGrid", () => {
     render(
       <KeyValueGrid
         rows={[
-          { label: "Name", value: "AgentPay" },
+          { label: "Name", value: "Stellar Machina" },
           { label: "ID", value: "ap_123" },
         ]}
       />
@@ -36,7 +36,7 @@ describe("KeyValueGrid", () => {
     const definitions = screen.getAllByRole("definition");
 
     expect(terms.map((n) => n.textContent)).toEqual(["Name", "ID"]);
-    expect(definitions.map((n) => n.textContent)).toEqual(["AgentPay", "ap_123"]);
+    expect(definitions.map((n) => n.textContent)).toEqual(["Stellar Machina", "ap_123"]);
   });
 
   it("renders nothing meaningful for an empty rows array", () => {

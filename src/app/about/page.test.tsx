@@ -5,9 +5,9 @@ describe("AboutPage", () => {
   it("renders the intro copy and each dashboard surface link", () => {
     render(<AboutPage />);
 
-    expect(screen.getByRole("heading", { name: /About AgentPay/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /About Stellar Machina/i })).toBeInTheDocument();
     expect(
-      screen.getByText(/AgentPay is a pay-per-request payment protocol for autonomous AI agents and APIs/i)
+      screen.getByText(/Stellar Machina is a pay-per-request payment protocol for autonomous AI agents and APIs/i)
     ).toBeInTheDocument();
     expect(
       screen.getByText(/This dashboard exposes every read and write surface the backend provides:/i)

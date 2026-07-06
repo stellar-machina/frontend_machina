@@ -70,6 +70,6 @@ describe("Footer", () => {
 
   it("renders the dynamic copyright year", () => {
     render(<Footer />);
-    expect(screen.getByText(/© 2026 AgentPay/i)).toBeInTheDocument();
+    expect(screen.getByText(/© 2026 Stellar Machina/i)).toBeInTheDocument();
   });
 });

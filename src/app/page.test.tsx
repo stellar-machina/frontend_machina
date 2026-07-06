@@ -2,9 +2,9 @@ import { render, screen } from "@testing-library/react";
 import Home from "./page";
 
 describe("Home", () => {
-  it("renders AgentPay heading", () => {
+  it("renders Stellar Machina heading", () => {
     render(<Home />);
-    expect(screen.getByRole("heading", { name: /AgentPay/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Stellar Machina/i })).toBeInTheDocument();
   });
 
   it("renders protocol description", () => {

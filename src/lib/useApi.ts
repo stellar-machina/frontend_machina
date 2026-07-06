@@ -9,7 +9,7 @@ type State<T> =
   | { status: "ok"; data: T };
 
 /**
- * Fetch JSON from the AgentPay backend and react to path changes.
+ * Fetch JSON from the Stellar Machina backend and react to path changes.
  *
  * Pass `null` to skip fetching while keeping the current state. Responses from
  * stale paths are ignored after unmount or path changes, so consumers do not

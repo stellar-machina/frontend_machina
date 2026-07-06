@@ -19,10 +19,10 @@
  */
 export const messages = {
   footer: {
-    text: "AgentPay — machine-to-machine payments on Stellar. Pay per request.",
+    text: "Stellar Machina — machine-to-machine payments on Stellar. Pay per request.",
   },
   home: {
-    heading: "AgentPay",
+    heading: "Stellar Machina",
     description:
       "Machine-to-machine payment protocol on Stellar. Pay-per-request billing for AI agents and APIs.",
     quickLinksLabel: "Quick links",
@@ -36,9 +36,9 @@ export const messages = {
     },
   },
   about: {
-    heading: "About AgentPay",
+    heading: "About Stellar Machina",
     intro:
-      "AgentPay is a pay-per-request payment protocol for autonomous AI agents and APIs, settled on Stellar via Soroban. Agents accrue usage against registered services off-chain; a settlement worker drains the usage counters and mirrors them on-chain.",
+      "Stellar Machina is a pay-per-request payment protocol for autonomous AI agents and APIs, settled on Stellar via Soroban. Agents accrue usage against registered services off-chain; a settlement worker drains the usage counters and mirrors them on-chain.",
     surfacesIntro:
       "This dashboard exposes every read and write surface the backend provides: service registry, usage metering, billing quotes, audit log, webhooks, API keys, and admin pause/unpause. Use the links below to jump directly to each surface.",
     navLabel: "Dashboard surfaces",
@@ -60,7 +60,7 @@ export const messages = {
     },
     connection: {
       heading: "Connection",
-      description: "Resolved API base URL of the AgentPay backend.",
+      description: "Resolved API base URL of the Stellar Machina backend.",
       label: "API Base URL",
     },
   },

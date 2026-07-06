@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { messages } from "@/lib/messages";
 
-export const metadata = { title: "About — AgentPay" };
+export const metadata = { title: "About — Stellar Machina" };
 
 const surfaces = [
   { label: "Service registry", href: "/services" },
