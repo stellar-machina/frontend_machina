@@ -101,7 +101,3 @@ Before requesting review, confirm:
 ## Security Notes
 
 Never commit API keys, wallet seeds, private keys, `.env` files, or production credentials. If a change touches authentication, wallet integration, payments, or API calls, add a short security note to the PR describing the trust boundary and what was validated.
-
-## Community and Rewards
-
-This repository participates in the GrantFox OSS campaign. For questions and review coordination, use the Stellar Machina community Discord linked from campaign issues. Rewards are handled by the campaign maintainers after merge when an issue is eligible.
